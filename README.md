@@ -1,144 +1,144 @@
 # Xhell Dashboard
 
-Dashboard configurable monopage pour gérer vos raccourcis vers différentes applications (Plex, Sonarr, Radarr, Home Assistant, etc.).
+Configurable single-page dashboard to manage shortcuts to your various applications (Plex, Sonarr, Radarr, Home Assistant, etc.).
 
-## Fonctionnalités
+## Features
 
-- 🎯 **Dashboard monopage** : Vue d'ensemble de toutes vos applications
-- ⚙️ **Configuration simple** : Interface intuitive pour ajouter/modifier/supprimer des applications
-- 🎨 **Logos flexibles** : Utilisez des icônes Lucide React ou des URLs d'images
-- 📊 **Statistiques configurables** : Affichez des stats depuis des APIs externes
-- 💾 **Persistance JSONDB** : Données sauvegardées dans un fichier JSON simple
-- 🐳 **Docker ready** : Prêt à être déployé avec Docker Compose
+- 🎯 **Single-page dashboard** : Overview of all your applications
+- ⚙️ **Simple configuration** : Intuitive interface to add/modify/delete applications
+- 🎨 **Flexible logos** : Use Lucide React icons or image URLs
+- 📊 **Configurable statistics** : Display stats from external APIs
+- 💾 **JSONDB persistence** : Data saved in a simple JSON file
+- 🐳 **Docker ready** : Ready to deploy with Docker Compose
 
-## Technologies utilisées
+## Technologies Used
 
-- **Next.js 16** avec App Router
+- **Next.js 16** with App Router
 - **TypeScript**
 - **Tailwind CSS**
-- **shadcn/ui** pour les composants UI
-- **Lucide React** pour les icônes
-- **Docker** pour la containerisation
+- **shadcn/ui** for UI components
+- **Lucide React** for icons
+- **Docker** for containerization
 
-## Installation et utilisation
+## Installation and Usage
 
-### Développement local
+### Local Development
 
-1. **Installer les dépendances** :
+1. **Install dependencies** :
 ```bash
 npm install
 ```
 
-2. **Lancer le serveur de développement** :
+2. **Start the development server** :
 ```bash
 npm run dev
 ```
 
-3. **Ouvrir dans le navigateur** :
+3. **Open in browser** :
 ```
 http://localhost:3000
 ```
 
-### Production avec Docker
+### Production with Docker
 
-1. **Construire et démarrer avec Docker Compose** :
+1. **Build and start with Docker Compose** :
 ```bash
 docker-compose up -d --build
 ```
 
-2. **Accéder à l'application** :
+2. **Access the application** :
 ```
 http://localhost:3000
 ```
 
-3. **Voir les logs** :
+3. **View logs** :
 ```bash
 docker-compose logs -f
 ```
 
-4. **Arrêter l'application** :
+4. **Stop the application** :
 ```bash
 docker-compose down
 ```
 
-## Structure du projet
+## Project Structure
 
 ```
 Xhell-Dash/
 ├── app/
-│   ├── api/              # Routes API Next.js
-│   │   └── apps/         # CRUD des applications
-│   ├── layout.tsx        # Layout racine
-│   └── page.tsx          # Page dashboard principale
+│   ├── api/              # Next.js API routes
+│   │   └── apps/         # Application CRUD
+│   ├── layout.tsx        # Root layout
+│   └── page.tsx          # Main dashboard page
 ├── components/
-│   ├── ui/               # Composants shadcn/ui
-│   ├── AppCard.tsx       # Card d'application
-│   ├── AppForm.tsx       # Formulaire d'ajout/modification
-│   └── ConfigPanel.tsx   # Panneau de configuration
+│   ├── ui/               # shadcn/ui components
+│   ├── AppCard.tsx       # Application card
+│   ├── AppForm.tsx       # Add/edit form
+│   └── ConfigPanel.tsx   # Configuration panel
 ├── lib/
-│   ├── db.ts             # Gestion JSONDB
-│   └── types.ts          # Types TypeScript
+│   ├── db.ts             # JSONDB management
+│   └── types.ts          # TypeScript types
 ├── data/
-│   └── apps.json         # Fichier de persistance (créé automatiquement)
-├── Dockerfile            # Configuration Docker
-└── docker-compose.yml    # Orchestration Docker
+│   └── apps.json         # Persistence file (created automatically)
+├── Dockerfile            # Docker configuration
+└── docker-compose.yml    # Docker orchestration
 ```
 
-## Utilisation
+## Usage
 
-### Ajouter une application
+### Adding an Application
 
-1. Cliquez sur le bouton **"Configuration"** en haut à droite
-2. Cliquez sur **"Ajouter une application"**
-3. Remplissez le formulaire :
-   - **Nom** : Nom de l'application (ex: "Plex", "Sonarr")
-   - **URL** : URL complète vers l'application
-   - **Type de logo** : Choisissez entre "Icône Lucide" ou "URL d'image"
+1. Click the **"Configuration"** button in the top right
+2. Click **"Add an application"**
+3. Fill out the form:
+   - **Name** : Application name (e.g., "Plex", "Sonarr")
+   - **URL** : Full URL to the application
+   - **Logo type** : Choose between "Lucide Icon" or "Image URL"
    - **Logo** : 
-     - Si icône : Sélectionnez une icône dans la liste
-     - Si URL : Entrez l'URL de l'image
-   - **URL de l'API de statistiques** (optionnel) : URL pour récupérer des stats
-   - **Libellé de la statistique** (optionnel) : Texte à afficher (ex: "Films", "Utilisateurs")
+     - If icon: Select an icon from the list
+     - If URL: Enter the image URL
+   - **Statistics API URL** (optional) : URL to fetch stats from
+   - **Statistics label** (optional) : Text to display (e.g., "Movies", "Users")
 
-4. Cliquez sur **"Ajouter"**
+4. Click **"Add"**
 
-### Modifier une application
+### Editing an Application
 
-1. Ouvrez le panneau de configuration
-2. Cliquez sur l'icône de crayon sur la card de l'application
-3. Modifiez les champs souhaités
-4. Cliquez sur **"Modifier"**
+1. Open the configuration panel
+2. Click the pencil icon on the application card
+3. Modify the desired fields
+4. Click **"Edit"**
 
-### Supprimer une application
+### Deleting an Application
 
-1. Ouvrez le panneau de configuration
-2. Cliquez sur l'icône de poubelle sur la card de l'application
-3. Confirmez la suppression
+1. Open the configuration panel
+2. Click the trash icon on the application card
+3. Confirm the deletion
 
-## Configuration des statistiques
+## Statistics Configuration
 
-Pour afficher des statistiques sur une card d'application :
+To display statistics on an application card:
 
-1. Configurez l'**URL de l'API de statistiques** lors de l'ajout/modification
-2. Configurez le **Libellé de la statistique** (ex: "Films", "Utilisateurs")
-3. L'API doit retourner une valeur JSON (nombre ou chaîne) ou un objet avec une propriété `value`, `count` ou `total`
+1. Configure the **Statistics API URL** when adding/editing
+2. Configure the **Statistics label** (e.g., "Movies", "Users")
+3. The API should return a JSON value (number or string) or an object with a `value`, `count`, or `total` property
 
-**Exemple de réponse API attendue** :
+**Expected API response example** :
 ```json
 42
 ```
-ou
+or
 ```json
 {
   "value": 42
 }
 ```
 
-Les statistiques sont rafraîchies automatiquement toutes les 30 secondes.
+Statistics are automatically refreshed every 30 seconds.
 
-## Exemples d'applications
+## Application Examples
 
-Voici quelques exemples d'applications que vous pouvez ajouter :
+Here are some example applications you can add:
 
 - **Plex** : `https://plex.example.com`
 - **Sonarr** : `https://sonarr.example.com`
@@ -152,19 +152,19 @@ Voici quelques exemples d'applications que vous pouvez ajouter :
 - **Pi-hole** : `http://pi-hole.local/admin`
 - **Gotify** : `https://gotify.example.com`
 
-## Persistance des données
+## Data Persistence
 
-Les applications sont sauvegardées dans `data/apps.json`. Ce fichier est créé automatiquement lors de la première utilisation.
+Applications are saved in `data/apps.json`. This file is automatically created on first use.
 
-**Avec Docker** : Le dossier `data/` est monté comme volume pour persister les données entre les redémarrages du conteneur.
+**With Docker** : The `data/` folder is mounted as a volume to persist data between container restarts.
 
-## Scripts disponibles
+## Available Scripts
 
-- `npm run dev` : Lance le serveur de développement
-- `npm run build` : Construit l'application pour la production
-- `npm run start` : Lance le serveur de production
-- `npm run lint` : Vérifie le code avec ESLint
+- `npm run dev` : Start the development server
+- `npm run build` : Build the application for production
+- `npm run start` : Start the production server
+- `npm run lint` : Check code with ESLint
 
-## Licence
+## License
 
 MIT
