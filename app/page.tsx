@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { AppCard } from '@/components/AppCard'
 import { ConfigPanel } from '@/components/ConfigPanel'
-import { Settings } from 'lucide-react'
+import { FloatingConfigButton } from '@/components/FloatingConfigButton'
 import type { App } from '@/lib/types'
 
 export default function Home() {
@@ -53,18 +53,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header avec titre et bouton de configuration */}
+      {/* Header avec titre */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4">
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <Button
-            variant="outline"
-            onClick={() => setIsConfigOpen(true)}
-            className="gap-2"
-          >
-            <Settings className="h-4 w-4" />
-            Configuration
-          </Button>
         </div>
       </header>
 
@@ -91,6 +83,9 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      {/* Bouton flottant de configuration */}
+      <FloatingConfigButton />
 
       {/* Panneau de configuration */}
       <ConfigPanel open={isConfigOpen} onOpenChange={setIsConfigOpen} />
