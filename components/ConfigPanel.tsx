@@ -1,7 +1,10 @@
 /**
  * Composant ConfigPanel
  * 
- * Panneau de configuration permettant de :
+ * Panneau de configuration utilisant le composant Sheet de shadcn/ui
+ * Affiche une liste d'applications pour une meilleure UX de configuration
+ * 
+ * Permet de :
  * - Voir la liste des applications
  * - Ajouter une nouvelle application
  * - Modifier une application existante
@@ -11,8 +14,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { AppCard } from '@/components/AppCard'
+import { AppListItem } from '@/components/AppListItem'
 import { AppForm } from '@/components/AppForm'
 import { Plus, Settings } from 'lucide-react'
 import type { App, CreateAppInput } from '@/lib/types'
@@ -136,43 +146,32 @@ export function ConfigPanel({ open, onOpenChange }: ConfigPanelProps) {
     }
   }
 
-  if (!open) return null
-
   return (
     <>
-      {/* Overlay avec fond sombre */}
-      <div
-        className="fixed inset-0 z-40 bg-black/50"
-        onClick={() => onOpenChange(false)}
-      />
-
-      {/* Panneau latéral */}
-      <div className="fixed right-0 top-0 z-50 h-full w-full max-w-2xl bg-background shadow-lg overflow-y-auto">
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b">
+      {/* Panneau latéral avec animations fluides via Sheet */}
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent 
+          side="right" 
+          className="w-full sm:max-w-lg overflow-y-auto"
+        >
+          {/* Header avec titre */}
+          <SheetHeader>
             <div className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
-              <h2 className="text-xl font-semibold">Configuration</h2>
+              <SheetTitle>Configuration</SheetTitle>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-            >
-              Fermer
-            </Button>
-          </div>
+            <SheetDescription>
+              Gérez vos applications et leurs raccourcis
+            </SheetDescription>
+          </SheetHeader>
 
-          {/* Contenu */}
-          <div className="flex-1 p-6">
+          {/* Contenu scrollable avec padding horizontal */}
+          <div className="px-4 pb-4 space-y-4">
             {/* Bouton d'ajout */}
-            <div className="mb-6">
-              <Button onClick={handleAdd} className="w-full sm:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                Ajouter une application
-              </Button>
-            </div>
+            <Button onClick={handleAdd} className="w-full">
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter une application
+            </Button>
 
             {/* Liste des applications */}
             {isLoading ? (
@@ -180,25 +179,27 @@ export function ConfigPanel({ open, onOpenChange }: ConfigPanelProps) {
                 Chargement...
               </div>
             ) : apps.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                Aucune application configurée. Cliquez sur "Ajouter une application" pour commencer.
+              <div className="text-center text-muted-foreground py-8 border rounded-lg px-4">
+                <p className="mb-2 font-medium">Aucune application</p>
+                <p className="text-sm">
+                  Cliquez sur "Ajouter une application" pour commencer.
+                </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
                 {apps.map((app) => (
-                  <AppCard
+                  <AppListItem
                     key={app.id}
                     app={app}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
-                    showActions={true}
                   />
                 ))}
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Formulaire d'ajout/modification */}
       <AppForm
@@ -210,4 +211,3 @@ export function ConfigPanel({ open, onOpenChange }: ConfigPanelProps) {
     </>
   )
 }
-
