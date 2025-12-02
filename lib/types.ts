@@ -145,9 +145,9 @@ export interface StatsDisplayOptions {
  * Type de statistique à afficher sur la carte
  * - 'number' : affiche simplement un nombre
  * - 'chart' : affiche un graphique (courbe)
- * - 'plex-recent' : pour Plex, affiche les 3 dernières images des médias ajoutés
+ * - 'custom' : type personnalisé spécifique à un template (utilise customType)
  */
-export type CardStatType = 'number' | 'chart' | 'plex-recent'
+export type CardStatType = 'number' | 'chart' | 'custom'
 
 /**
  * Configuration de la statistique affichée sur la carte
@@ -155,8 +155,11 @@ export type CardStatType = 'number' | 'chart' | 'plex-recent'
 export interface CardStatConfig {
   // Type de statistique à afficher
   type: CardStatType
+  // Type personnalisé spécifique au template (ex: 'plex-recent', 'sonarr-queue')
+  // Utilisé uniquement si type === 'custom'
+  customType?: string
   // Clé de la statistique à afficher (ex: 'totalMovies', 'totalShows', etc.)
-  // Pour 'plex-recent', cette clé n'est pas utilisée
+  // Pour les types 'custom', cette clé peut ne pas être utilisée selon le type
   key?: string
   // Libellé à afficher (optionnel, utilise statLabel par défaut)
   label?: string

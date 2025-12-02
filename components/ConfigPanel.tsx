@@ -14,6 +14,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Sheet,
   SheetContent,
@@ -23,9 +24,8 @@ import {
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { AppListItem } from '@/components/AppListItem'
-import { AppForm } from '@/components/AppForm'
 import { Plus, Settings } from 'lucide-react'
-import type { App, CreateAppInput } from '@/lib/types'
+import type { App } from '@/lib/types'
 
 interface ConfigPanelProps {
   open: boolean
@@ -33,10 +33,9 @@ interface ConfigPanelProps {
 }
 
 export function ConfigPanel({ open, onOpenChange }: ConfigPanelProps) {
+  const router = useRouter()
   const [apps, setApps] = useState<App[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isFormOpen, setIsFormOpen] = useState(false)
-  const [editingApp, setEditingApp] = useState<App | null>(null)
 
   /**
    * Charge la liste des applications depuis l'API
@@ -69,16 +68,16 @@ export function ConfigPanel({ open, onOpenChange }: ConfigPanelProps) {
    * Gère l'ajout d'une nouvelle application
    */
   const handleAdd = () => {
-    setEditingApp(null)
-    setIsFormOpen(true)
+    router.push('/config')
+    onOpenChange(false)
   }
 
   /**
    * Gère l'édition d'une application
    */
   const handleEdit = (app: App) => {
-    setEditingApp(app)
-    setIsFormOpen(true)
+    router.push(`/config?id=${app.id}`)
+    onOpenChange(false)
   }
 
   /**
@@ -103,48 +102,6 @@ export function ConfigPanel({ open, onOpenChange }: ConfigPanelProps) {
     }
   }
 
-  /**
-   * Gère la soumission du formulaire (création ou modification)
-   */
-  const handleFormSubmit = async (data: CreateAppInput) => {
-    try {
-      if (editingApp) {
-        // Mode modification
-        const response = await fetch(`/api/apps/${editingApp.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data),
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Erreur lors de la modification')
-        }
-      } else {
-        // Mode création
-        const response = await fetch('/api/apps', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data),
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Erreur lors de la création')
-        }
-      }
-
-      // Recharger la liste après modification/création
-      await loadApps()
-      setIsFormOpen(false)
-    } catch (error: any) {
-      throw error // Propager l'erreur pour qu'AppForm puisse l'afficher
-    }
-  }
 
   return (
     <>
@@ -200,14 +157,6 @@ export function ConfigPanel({ open, onOpenChange }: ConfigPanelProps) {
           </div>
         </SheetContent>
       </Sheet>
-
-      {/* Formulaire d'ajout/modification */}
-      <AppForm
-        open={isFormOpen}
-        onOpenChange={setIsFormOpen}
-        app={editingApp}
-        onSubmit={handleFormSubmit}
-      />
     </>
   )
 }

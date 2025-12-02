@@ -6,6 +6,7 @@
  */
 
 import type { StatsDisplayOptions } from './types'
+import { getCardStatTypes } from './card-stat-types'
 
 /**
  * Interface pour un template de statistiques
@@ -18,6 +19,8 @@ export interface StatsTemplate {
   applyTemplate: (currentValues: any) => any
   // Options d'affichage par défaut pour ce template
   defaultDisplayOptions: StatsDisplayOptions
+  // Types de statistiques de carte disponibles pour ce template
+  cardStatTypes?: string[]
 }
 
 /**
@@ -49,6 +52,8 @@ const plexTemplate: StatsTemplate = {
       showLibraries: true,
     },
   },
+  // Types de stats de carte disponibles pour Plex
+  cardStatTypes: getCardStatTypes('plex'),
 }
 
 /**

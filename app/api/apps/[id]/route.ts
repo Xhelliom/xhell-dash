@@ -1,6 +1,7 @@
 /**
  * API Route pour gérer une application spécifique
  * 
+ * GET /api/apps/[id] : Récupère une application
  * PUT /api/apps/[id] : Met à jour une application
  * DELETE /api/apps/[id] : Supprime une application
  */
@@ -8,6 +9,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readApps, writeApps } from '@/lib/db'
 import type { App, UpdateAppInput } from '@/lib/types'
+
+/**
+ * GET /api/apps/[id]
+ * Récupère une application par son ID
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    
+    // Lire les applications existantes
+    const apps = await readApps()
+    
+    // Trouver l'application
+    const app = apps.find((a) => a.id === id)
+    
+    if (!app) {
+      return NextResponse.json(
+        { error: 'Application non trouvée' },
+        { status: 404 }
+      )
+    }
+    
+    return NextResponse.json(app, { status: 200 })
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'app:', error)
+    return NextResponse.json(
+      { error: 'Impossible de récupérer l\'application' },
+      { status: 500 }
+    )
+  }
+}
 
 /**
  * PUT /api/apps/[id]

@@ -16,10 +16,9 @@ import * as Icons from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatsPanel } from '@/components/StatsPanel'
-import { PlexRecentImages } from '@/components/PlexRecentImages'
-import { ChartContainer, ChartConfig } from '@/components/ui/chart'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
-import type { App, CardStatType, PlexStats } from '@/lib/types'
+import { CardStatRenderer } from '@/components/card-stats/CardStatRenderer'
+import { normalizeCardStatConfig } from '@/lib/card-stat-utils'
+import type { App, CardStatType } from '@/lib/types'
 
 interface AppCardProps {
   app: App
@@ -48,99 +47,16 @@ function getLucideIcon(iconName: string) {
 }
 
 export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardProps) {
-  const [statValue, setStatValue] = useState<string | number | undefined>(app.statValue)
-  const [chartData, setChartData] = useState<any[]>([])
-  const [isLoadingStat, setIsLoadingStat] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [isStatsPanelOpen, setIsStatsPanelOpen] = useState(false)
 
   // Vérifier si l'application a un template de statistiques configuré
   const hasStatsTemplate = !!app.statsConfig?.templateId
   const templateId = app.statsConfig?.templateId
-
-  // Configuration de la statistique de carte
-  const cardStatConfig = app.statsConfig?.cardStat
+  
+  // Configuration de la statistique de carte (normalisée pour gérer les anciennes configs)
+  const cardStatConfig = normalizeCardStatConfig(app.statsConfig?.cardStat)
   const cardStatType: CardStatType | undefined = cardStatConfig?.type || (app.statLabel ? 'number' : undefined)
-
-  /**
-   * Récupère les statistiques depuis l'API selon le type configuré
-   */
-  useEffect(() => {
-    // Si pas de configuration de stat de carte, utiliser l'ancien système
-    if (!cardStatType && !app.statApiUrl) return
-
-    const fetchStats = async () => {
-      setIsLoadingStat(true)
-      try {
-        if (cardStatType === 'plex-recent') {
-          // Pour les images Plex, on ne charge rien ici (géré par PlexRecentImages)
-          setIsLoadingStat(false)
-          return
-        }
-
-        if (cardStatType === 'chart' && app.statsConfig?.templateId === 'plex') {
-          // Pour les graphiques Plex, récupérer les stats complètes
-          const response = await fetch(`/api/apps/${app.id}/stats/plex`)
-          if (response.ok) {
-            const data: PlexStats = await response.json()
-            const statKey = cardStatConfig?.key || 'totalMovies'
-
-            // Générer des données pour le graphique (simulation avec les données actuelles)
-            // Dans un vrai cas, on aurait besoin de données historiques
-            const value = (data as any)[statKey] || 0
-            setChartData([
-              { name: 'J-6', value: Math.max(0, value - 20) },
-              { name: 'J-5', value: Math.max(0, value - 15) },
-              { name: 'J-4', value: Math.max(0, value - 10) },
-              { name: 'J-3', value: Math.max(0, value - 5) },
-              { name: 'J-2', value: Math.max(0, value - 2) },
-              { name: 'J-1', value: Math.max(0, value - 1) },
-              { name: 'Aujourd\'hui', value },
-            ])
-          }
-        } else if (cardStatType === 'number') {
-          // Pour les nombres, utiliser l'API générique ou Plex selon le template
-          const endpoint = app.statsConfig?.templateId === 'plex'
-            ? `/api/apps/${app.id}/stats/plex`
-            : `/api/apps/${app.id}/stats`
-
-          const response = await fetch(endpoint)
-          if (response.ok) {
-            const data = await response.json()
-            const statKey = cardStatConfig?.key || 'value'
-
-            // Extraire la valeur selon la clé
-            const value = (data as any)[statKey] ||
-              (typeof data === 'number' ? data :
-                data.value || data.count || data.total)
-            setStatValue(value)
-          }
-        } else if (app.statApiUrl) {
-          // Ancien système de compatibilité
-          const response = await fetch(`/api/apps/${app.id}/stats`)
-          if (response.ok) {
-            const data = await response.json()
-            const value = typeof data === 'number' || typeof data === 'string'
-              ? data
-              : data.value || data.count || data.total
-            setStatValue(value)
-          }
-        }
-      } catch (error) {
-        console.error('Erreur lors de la récupération des stats:', error)
-      } finally {
-        setIsLoadingStat(false)
-      }
-    }
-
-    // Récupérer immédiatement
-    fetchStats()
-
-    // Rafraîchir toutes les 30 secondes
-    const interval = setInterval(fetchStats, 30000)
-
-    return () => clearInterval(interval)
-  }, [app.id, app.statApiUrl, cardStatType, cardStatConfig?.key, app.statsConfig?.templateId])
 
   /**
    * Gère le clic sur le bouton pour ouvrir l'application
@@ -223,89 +139,16 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
       </CardHeader>
 
       <CardContent className="space-y-3">
-        {/* Affichage de la statistique selon le type configuré */}
-        {cardStatType === 'plex-recent' && (
-          <div className="space-y-2">
-            <span className="text-sm text-muted-foreground">
-              {cardStatConfig?.label || 'Derniers ajouts'}
-            </span>
-            <PlexRecentImages appId={app.id} />
-          </div>
+        {/* Affichage de la statistique via le renderer générique */}
+        {cardStatConfig && cardStatConfig.type && (
+          <CardStatRenderer app={app} config={cardStatConfig} />
         )}
 
-        {cardStatType === 'chart' && (
-          <div className="space-y-2">
-            <span className="text-sm text-muted-foreground">
-              {cardStatConfig?.label || app.statLabel || 'Statistique'}
-            </span>
-            {isLoadingStat ? (
-              <div className="h-24 flex items-center justify-center">
-                <span className="text-sm text-muted-foreground">Chargement...</span>
-              </div>
-            ) : chartData.length > 0 ? (
-              <ChartContainer
-                config={{
-                  value: {
-                    label: cardStatConfig?.label || 'Valeur',
-                    color: 'hsl(var(--chart-1))',
-                  },
-                } satisfies ChartConfig}
-                className="h-24 w-full"
-              >
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={30}
-                  />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="var(--color-value)"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ChartContainer>
-            ) : (
-              <div className="h-24 flex items-center justify-center">
-                <span className="text-sm text-muted-foreground">Aucune donnée</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {cardStatType === 'number' && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-sm text-muted-foreground">
-              {cardStatConfig?.label || app.statLabel || 'Statistique'}:
-            </span>
-            {isLoadingStat ? (
-              <span className="text-sm text-muted-foreground">...</span>
-            ) : (
-              <span className="text-lg font-semibold">{statValue ?? 'N/A'}</span>
-            )}
-          </div>
-        )}
-
-        {/* Compatibilité avec l'ancien système */}
-        {!cardStatType && app.statLabel && (
+        {/* Compatibilité avec l'ancien système (si pas de cardStat configuré mais statLabel présent) */}
+        {!cardStatConfig && app.statLabel && (
           <div className="flex items-baseline gap-2">
             <span className="text-sm text-muted-foreground">{app.statLabel}:</span>
-            {isLoadingStat ? (
-              <span className="text-sm text-muted-foreground">...</span>
-            ) : (
-              <span className="text-lg font-semibold">{statValue ?? 'N/A'}</span>
-            )}
+            <span className="text-lg font-semibold">{app.statValue ?? 'N/A'}</span>
           </div>
         )}
 
