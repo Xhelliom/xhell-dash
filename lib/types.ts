@@ -33,6 +33,8 @@ export interface App {
   statApiUrl?: string
   statLabel?: string
   statValue?: string | number
+  // Ordre d'affichage dans le dashboard
+  order?: number
   // Champs spécifiques pour Plex
   plexToken?: string
   plexServerUrl?: string
@@ -50,6 +52,7 @@ export interface CreateAppInput {
   logoType: LogoType
   statApiUrl?: string
   statLabel?: string
+  order?: number
   plexToken?: string
   plexServerUrl?: string
   statsConfig?: StatsConfig
@@ -66,6 +69,7 @@ export interface UpdateAppInput {
   statApiUrl?: string
   statLabel?: string
   statValue?: string | number
+  order?: number
   plexToken?: string
   plexServerUrl?: string
   statsConfig?: StatsConfig

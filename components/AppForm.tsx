@@ -35,6 +35,7 @@ interface AppFormProps {
   onOpenChange: (open: boolean) => void
   app?: App | null
   onSubmit: (data: CreateAppInput) => Promise<void>
+  asSheet?: boolean // Si true, retourne juste le contenu sans Dialog wrapper
 }
 
 /**
@@ -64,7 +65,7 @@ const POPULAR_ICONS = [
   'BarChart',
 ]
 
-export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
+export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: AppFormProps) {
   // Référence au formulaire pour la soumission
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -350,20 +351,11 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle>{app ? 'Modifier l\'application' : 'Ajouter une application'}</DialogTitle>
-          <DialogDescription>
-            {app
-              ? 'Modifiez les informations de l\'application'
-              : 'Remplissez les informations pour ajouter une nouvelle application au dashboard'}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto pr-1 -mr-1">
-          <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+  // Contenu du formulaire (réutilisable pour Dialog et Sheet)
+  const formContent = (
+    <>
+      <div className="flex-1 overflow-y-auto pr-1 -mr-1">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
           {/* Nom de l'application */}
           <div className="space-y-2">
             <Label htmlFor="name">Nom *</Label>
@@ -696,7 +688,8 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
           </form>
         </div>
 
-        <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
+        {/* Footer avec boutons */}
+        <div className="flex-shrink-0 border-t pt-4 mt-4 flex justify-end gap-4">
           <Button
             type="button"
             variant="outline"
@@ -716,7 +709,28 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
           >
             {isSubmitting ? 'Enregistrement...' : app ? 'Modifier' : 'Ajouter'}
           </Button>
-        </DialogFooter>
+        </div>
+    </>
+  )
+
+  // Si asSheet est true, retourner juste le contenu sans Dialog
+  if (asSheet) {
+    return formContent
+  }
+
+  // Sinon, retourner avec Dialog wrapper
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle>{app ? 'Modifier l\'application' : 'Ajouter une application'}</DialogTitle>
+          <DialogDescription>
+            {app
+              ? 'Modifiez les informations de l\'application'
+              : 'Remplissez les informations pour ajouter une nouvelle application au dashboard'}
+          </DialogDescription>
+        </DialogHeader>
+        {formContent}
       </DialogContent>
     </Dialog>
   )

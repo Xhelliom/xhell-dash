@@ -86,6 +86,16 @@ export async function POST(request: NextRequest) {
     // Lire les applications existantes
     const apps = await readApps()
     
+    // Déterminer l'ordre : utiliser celui fourni ou le dernier ordre + 1
+    let order = body.order
+    if (order === undefined) {
+      // Trouver le maximum d'ordre existant
+      const maxOrder = apps.reduce((max, app) => {
+        return Math.max(max, app.order ?? -1)
+      }, -1)
+      order = maxOrder + 1
+    }
+    
     // Créer la nouvelle application
     const newApp: App = {
       id: generateAppId(),
@@ -95,8 +105,10 @@ export async function POST(request: NextRequest) {
       logoType: body.logoType,
       statApiUrl: body.statApiUrl,
       statLabel: body.statLabel,
+      order,
       plexToken: body.plexToken,
       plexServerUrl: body.plexServerUrl,
+      statsConfig: body.statsConfig,
     }
     
     // Ajouter à la liste

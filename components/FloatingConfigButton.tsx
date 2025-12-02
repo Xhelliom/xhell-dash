@@ -4,34 +4,36 @@
  * Bouton de configuration flottant avec animation :
  * - Icône seule par défaut
  * - Au survol, s'agrandit et révèle le texte "Configuration"
+ * - Toggle le mode édition du dashboard au lieu de rediriger
  */
 
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Settings } from 'lucide-react'
+import { Settings, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface FloatingConfigButtonProps {
     className?: string
+    isEditMode?: boolean
 }
 
-export function FloatingConfigButton({ className }: FloatingConfigButtonProps) {
-    const router = useRouter()
+export function FloatingConfigButton({ className, isEditMode = false }: FloatingConfigButtonProps) {
     const [isHovered, setIsHovered] = useState(false)
 
     /**
      * Gère le clic sur le bouton
+     * Émet un événement personnalisé pour toggle le mode édition
      */
     const handleClick = () => {
-        router.push('/config')
+        // Émettre un événement personnalisé pour toggle le mode édition
+        window.dispatchEvent(new CustomEvent('toggleEditMode'))
     }
 
     return (
         <Button
-            variant="default"
+            variant={isEditMode ? "destructive" : "default"}
             size="icon"
             onClick={handleClick}
             onMouseEnter={() => setIsHovered(true)}
@@ -50,13 +52,17 @@ export function FloatingConfigButton({ className }: FloatingConfigButtonProps) {
                     : 'w-14',
                 className
             )}
-            aria-label="Configuration"
+            aria-label={isEditMode ? "Quitter le mode édition" : "Configuration"}
         >
             <div className={cn(
                 'flex items-center',
                 isHovered ? 'justify-start' : 'justify-center w-full'
             )}>
-                <Settings className="h-5 w-5 shrink-0" />
+                {isEditMode ? (
+                    <X className="h-5 w-5 shrink-0" />
+                ) : (
+                    <Settings className="h-5 w-5 shrink-0" />
+                )}
                 <span
                     className={cn(
                         'whitespace-nowrap font-medium',
@@ -67,7 +73,7 @@ export function FloatingConfigButton({ className }: FloatingConfigButtonProps) {
                             : 'max-w-0 opacity-0 ml-0'
                     )}
                 >
-                    Configuration
+                    {isEditMode ? 'Quitter' : 'Configuration'}
                 </span>
             </div>
         </Button>

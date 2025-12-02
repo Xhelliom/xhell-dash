@@ -16,7 +16,7 @@ const APPS_FILE = path.join(DATA_DIR, 'apps.json')
 /**
  * Lit la liste des applications depuis le fichier JSON
  * 
- * @returns Promise<App[]> - Liste des applications
+ * @returns Promise<App[]> - Liste des applications triée par ordre
  * @throws Error si le fichier ne peut pas être lu ou si les données sont invalides
  */
 export async function readApps(): Promise<App[]> {
@@ -35,7 +35,23 @@ export async function readApps(): Promise<App[]> {
       throw new Error('Les données doivent être un tableau')
     }
     
-    return apps
+    // Trier les apps par ordre (si défini), sinon garder l'ordre d'origine
+    return apps.sort((a, b) => {
+      // Si les deux ont un ordre, trier par ordre
+      if (a.order !== undefined && b.order !== undefined) {
+        return a.order - b.order
+      }
+      // Si seul a a un ordre, il vient en premier
+      if (a.order !== undefined) {
+        return -1
+      }
+      // Si seul b a un ordre, il vient en premier
+      if (b.order !== undefined) {
+        return 1
+      }
+      // Sinon, garder l'ordre d'origine
+      return 0
+    })
   } catch (error: any) {
     // Si le fichier n'existe pas, retourner un tableau vide
     if (error.code === 'ENOENT') {
