@@ -7,10 +7,12 @@
 
 'use client'
 
+import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2 } from 'lucide-react'
+import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import { ClockWidget } from './ClockWidget'
 import { WeatherWidget } from './WeatherWidget'
 import { SystemInfoWidget } from './SystemInfoWidget'
@@ -47,6 +49,8 @@ export function SortableWidgetContainer({
     showActions,
     isDragging: globalIsDragging,
 }: SortableWidgetContainerProps) {
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    
     const {
         attributes,
         listeners,
@@ -70,11 +74,27 @@ export function SortableWidgetContainer({
         onEdit?.(widget)
     }
 
-    const handleDelete = (e: React.MouseEvent) => {
+    const handleDeleteClick = (e: React.MouseEvent) => {
         e.stopPropagation()
         e.preventDefault()
-        if (confirm(`Êtes-vous sûr de vouloir supprimer ce widget ?`)) {
-            onDelete?.(widget.id)
+        setIsDeleteDialogOpen(true)
+    }
+
+    const handleConfirmDelete = () => {
+        onDelete?.(widget.id)
+    }
+
+    // Obtenir le nom du widget pour l'affichage
+    const getWidgetName = () => {
+        switch (widget.type) {
+            case 'clock':
+                return 'Horloge'
+            case 'weather':
+                return 'Météo'
+            case 'system-info':
+                return 'Informations système'
+            default:
+                return 'Widget'
         }
     }
 
@@ -102,7 +122,7 @@ export function SortableWidgetContainer({
                         <Button
                             variant="destructive"
                             size="sm"
-                            onClick={handleDelete}
+                            onClick={handleDeleteClick}
                             onMouseDown={(e) => e.stopPropagation()}
                             className="h-8 w-8 p-0 shadow-md cursor-pointer hover:bg-destructive/80"
                         >
@@ -122,6 +142,15 @@ export function SortableWidgetContainer({
             >
                 <WidgetRenderer widget={widget} />
             </div>
+
+            {/* Dialog de confirmation de suppression */}
+            <DeleteConfirmDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                onConfirm={handleConfirmDelete}
+                title="Supprimer le widget"
+                description={`Êtes-vous sûr de vouloir supprimer le widget "${getWidgetName()}" ? Cette action est irréversible.`}
+            />
         </div>
     )
 }

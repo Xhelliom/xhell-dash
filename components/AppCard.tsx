@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatsPanel } from '@/components/StatsPanel'
 import { CardStatRenderer } from '@/components/card-stats/CardStatRenderer'
+import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import { normalizeCardStatConfig } from '@/lib/card-stat-utils'
 import type { App, CardStatType } from '@/lib/types'
 
@@ -49,6 +50,7 @@ function getLucideIcon(iconName: string) {
 export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardProps) {
   const [imageError, setImageError] = useState(false)
   const [isStatsPanelOpen, setIsStatsPanelOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   // Vérifier si l'application a un template de statistiques configuré
   const hasStatsTemplate = !!app.statsConfig?.templateId
@@ -78,11 +80,16 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
   /**
    * Gère le clic sur le bouton de suppression
    */
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation() // Empêcher le clic sur la card
-    if (confirm(`Êtes-vous sûr de vouloir supprimer "${app.name}" ?`)) {
-      onDelete?.(app.id)
-    }
+    setIsDeleteDialogOpen(true)
+  }
+
+  /**
+   * Confirme la suppression
+   */
+  const handleConfirmDelete = () => {
+    onDelete?.(app.id)
   }
 
 
@@ -128,7 +135,7 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleDelete}
+                onClick={handleDeleteClick}
                 className="h-8 w-8 p-0 text-destructive hover:text-destructive"
               >
                 <Icons.Trash2 className="h-4 w-4" />
@@ -196,6 +203,15 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
           templateId={templateId}
         />
       )}
+
+      {/* Dialog de confirmation de suppression */}
+      <DeleteConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Supprimer l'application"
+        description={`Êtes-vous sûr de vouloir supprimer "${app.name}" ? Cette action est irréversible.`}
+      />
     </Card>
   )
 }

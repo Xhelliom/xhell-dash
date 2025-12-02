@@ -6,8 +6,10 @@
 
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2, Clock, Cloud, Server } from 'lucide-react'
+import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import type { Widget } from '@/lib/types'
 
 interface WidgetListItemProps {
@@ -33,15 +35,21 @@ function getWidgetInfo(type: string) {
 }
 
 export function WidgetListItem({ widget, onEdit, onDelete }: WidgetListItemProps) {
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const { icon: Icon, name } = getWidgetInfo(widget.type)
 
     /**
-     * Gère la suppression avec confirmation
+     * Gère le clic sur le bouton de suppression
      */
-    const handleDelete = () => {
-        if (confirm(`Êtes-vous sûr de vouloir supprimer le widget "${name}" ?`)) {
-            onDelete(widget.id)
-        }
+    const handleDeleteClick = () => {
+        setIsDeleteDialogOpen(true)
+    }
+
+    /**
+     * Confirme la suppression
+     */
+    const handleConfirmDelete = () => {
+        onDelete(widget.id)
     }
 
     return (
@@ -81,13 +89,22 @@ export function WidgetListItem({ widget, onEdit, onDelete }: WidgetListItemProps
                 <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleDelete}
+                    onClick={handleDeleteClick}
                     className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                     title="Supprimer"
                 >
                     <Trash2 className="h-4 w-4" />
                 </Button>
             </div>
+
+            {/* Dialog de confirmation de suppression */}
+            <DeleteConfirmDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                onConfirm={handleConfirmDelete}
+                title="Supprimer le widget"
+                description={`Êtes-vous sûr de vouloir supprimer le widget "${name}" ? Cette action est irréversible.`}
+            />
         </div>
     )
 }

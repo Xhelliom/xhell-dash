@@ -7,9 +7,11 @@
 
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2, ExternalLink } from 'lucide-react'
 import * as Icons from 'lucide-react'
+import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import type { App } from '@/lib/types'
 
 interface AppListItemProps {
@@ -31,15 +33,21 @@ function getLucideIcon(iconName: string) {
 }
 
 export function AppListItem({ app, onEdit, onDelete }: AppListItemProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const IconComponent = app.logoType === 'icon' ? getLucideIcon(app.logo) : null
 
   /**
-   * Gère la suppression avec confirmation
+   * Gère le clic sur le bouton de suppression
    */
-  const handleDelete = () => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer "${app.name}" ?`)) {
-      onDelete(app.id)
-    }
+  const handleDeleteClick = () => {
+    setIsDeleteDialogOpen(true)
+  }
+
+  /**
+   * Confirme la suppression
+   */
+  const handleConfirmDelete = () => {
+    onDelete(app.id)
   }
 
   /**
@@ -104,13 +112,22 @@ export function AppListItem({ app, onEdit, onDelete }: AppListItemProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={handleDelete}
+          onClick={handleDeleteClick}
           className="h-8 w-8 p-0 text-destructive hover:text-destructive"
           title="Supprimer"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Dialog de confirmation de suppression */}
+      <DeleteConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Supprimer l'application"
+        description={`Êtes-vous sûr de vouloir supprimer "${app.name}" ? Cette action est irréversible.`}
+      />
     </div>
   )
 }
