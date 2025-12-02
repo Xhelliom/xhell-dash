@@ -28,11 +28,13 @@ import { Button } from '@/components/ui/button'
 import { AppCard } from '@/components/AppCard'
 import { SortableAppCard } from '@/components/SortableAppCard'
 import { FloatingConfigButton } from '@/components/FloatingConfigButton'
+import { BackgroundConfigButton } from '@/components/BackgroundConfigButton'
 import { AppForm } from '@/components/AppForm'
 import { WidgetContainer } from '@/components/widgets/WidgetContainer'
 import { WidgetForm } from '@/components/widgets/WidgetForm'
 import { SortableWidgetContainer } from '@/components/widgets/SortableWidgetContainer'
-import type { Widget } from '@/lib/types'
+import { Background } from '@/components/Background'
+import type { Widget, BackgroundEffect, AppConfig } from '@/lib/types'
 import {
   Sheet,
   SheetContent,
@@ -40,8 +42,10 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus } from 'lucide-react'
 import type { App, CreateAppInput } from '@/lib/types'
+import { SettingsPanel } from '@/components/SettingsPanel'
 
 export default function Home() {
   const [apps, setApps] = useState<App[]>([])
@@ -56,6 +60,10 @@ export default function Home() {
   const [editingWidget, setEditingWidget] = useState<Widget | null>(null)
   const [isSavingWidgetOrder, setIsSavingWidgetOrder] = useState(false)
   const [isDraggingWidget, setIsDraggingWidget] = useState(false)
+  const [backgroundEffect, setBackgroundEffect] =
+    useState<BackgroundEffect>('mesh-animated')
+  const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false)
+  const [configTab, setConfigTab] = useState<string>('settings')
 
   // Configuration des capteurs pour le drag & drop
   const sensors = useSensors(
@@ -104,6 +112,23 @@ export default function Home() {
   }
 
   /**
+   * Charge la configuration depuis l'API
+   */
+  const loadConfig = async () => {
+    try {
+      const response = await fetch('/api/config')
+      if (response.ok) {
+        const config: AppConfig = await response.json()
+        setBackgroundEffect(config.backgroundEffect || 'mesh-animated')
+      } else {
+        console.error('Erreur lors du chargement de la configuration')
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de la configuration:', error)
+    }
+  }
+
+  /**
    * Gère le début du drag & drop pour les apps
    * Masque tous les boutons d'édition
    */
@@ -124,7 +149,7 @@ export default function Home() {
    */
   const handleDragEnd = async (event: DragEndEvent) => {
     setIsDragging(false)
-    
+
     const { active, over } = event
 
     if (!over || active.id === over.id) {
@@ -175,7 +200,7 @@ export default function Home() {
    */
   const handleWidgetDragEnd = async (event: DragEndEvent) => {
     setIsDraggingWidget(false)
-    
+
     const { active, over } = event
 
     if (!over || active.id === over.id) {
@@ -382,10 +407,11 @@ export default function Home() {
     }
   }
 
-  // Charger les apps et widgets au montage du composant
+  // Charger les apps, widgets et configuration au montage du composant
   useEffect(() => {
     loadApps()
     loadWidgets()
+    loadConfig()
   }, [])
 
   // Toggle du mode édition depuis le bouton flottant
@@ -402,12 +428,34 @@ export default function Home() {
     }
   }, [])
 
+  /**
+   * Gère l'ouverture du panneau de configuration
+   */
+  const handleOpenConfigPanel = (tab: string = 'settings') => {
+    setConfigTab(tab)
+    setIsConfigPanelOpen(true)
+  }
+
+  /**
+   * Gère la fermeture du panneau de configuration
+   */
+  const handleCloseConfigPanel = () => {
+    setIsConfigPanelOpen(false)
+  }
+
+  /**
+   * Recharge la configuration après modification
+   */
+  const handleConfigChange = () => {
+    loadConfig()
+  }
+
   // IDs des apps et widgets pour le SortableContext
   const appIds = apps.map((app) => app.id)
   const widgetIds = widgets.map((widget) => widget.id)
 
   return (
-    <div className="min-h-screen bg-background">
+    <Background effect={backgroundEffect}>
       {/* Contenu principal */}
       <main className="container mx-auto px-4 py-8">
         {/* Section des widgets avec drag & drop en mode édition */}
@@ -448,7 +496,7 @@ export default function Home() {
         ) : (
           <WidgetContainer widgets={widgets} />
         )}
-        
+
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="text-muted-foreground">Chargement...</div>
@@ -511,8 +559,16 @@ export default function Home() {
         )}
       </main>
 
-      {/* Bouton flottant de configuration */}
-      <FloatingConfigButton isEditMode={isEditMode} />
+      {/* Boutons flottants de configuration */}
+      <div className="fixed bottom-6 right-6 z-[100] flex flex-col-reverse items-end gap-3">
+        {/* Bouton de configuration principal (toggle mode édition) */}
+        <FloatingConfigButton isEditMode={isEditMode} />
+
+        {/* Bouton Background (visible uniquement en mode édition) */}
+        {isEditMode && (
+          <BackgroundConfigButton onClick={() => handleOpenConfigPanel('settings')} />
+        )}
+      </div>
 
       {/* Sheet avec AppForm pour ajouter/éditer */}
       <Sheet open={isAppFormOpen} onOpenChange={setIsAppFormOpen}>
@@ -564,6 +620,134 @@ export default function Home() {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+
+      {/* Panneau de configuration avec onglets */}
+      <Sheet open={isConfigPanelOpen} onOpenChange={setIsConfigPanelOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-hidden p-0 flex flex-col">
+          <SheetHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
+            <SheetTitle>Configuration</SheetTitle>
+            <SheetDescription>
+              Gérez les applications, widgets et paramètres du dashboard
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <Tabs value={configTab} onValueChange={setConfigTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="settings">Paramètres</TabsTrigger>
+                <TabsTrigger value="apps">Applications</TabsTrigger>
+                <TabsTrigger value="widgets">Widgets</TabsTrigger>
+              </TabsList>
+              <TabsContent value="settings" className="mt-4">
+                <SettingsPanel onConfigChange={handleConfigChange} />
+              </TabsContent>
+              <TabsContent value="apps" className="mt-4">
+                <div className="space-y-4">
+                  <Button onClick={handleAddApp} className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter une application
+                  </Button>
+                  {apps.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8 border rounded-lg px-4">
+                      <p className="mb-2 font-medium">Aucune application</p>
+                      <p className="text-sm">
+                        Cliquez sur "Ajouter une application" pour commencer.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {apps.map((app) => (
+                        <div
+                          key={app.id}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium">{app.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {app.url}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingApp(app)
+                                setIsAppFormOpen(true)
+                              }}
+                            >
+                              Modifier
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteApp(app.id)}
+                            >
+                              Supprimer
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              <TabsContent value="widgets" className="mt-4">
+                <div className="space-y-4">
+                  <Button onClick={handleAddWidget} className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter un widget
+                  </Button>
+                  {widgets.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8 border rounded-lg px-4">
+                      <p className="mb-2 font-medium">Aucun widget</p>
+                      <p className="text-sm">
+                        Cliquez sur "Ajouter un widget" pour commencer.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {widgets.map((widget) => (
+                        <div
+                          key={widget.id}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium">
+                              {widget.type} {widget.enabled ? '(activé)' : '(désactivé)'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              ID: {widget.id}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingWidget(widget)
+                                setIsWidgetFormOpen(true)
+                              }}
+                            >
+                              Modifier
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteWidget(widget.id)}
+                            >
+                              Supprimer
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </Background>
   )
 }

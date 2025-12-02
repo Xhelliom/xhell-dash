@@ -7,12 +7,13 @@
 
 import { promises as fs } from 'fs'
 import path from 'path'
-import type { App, Widget } from './types'
+import type { App, Widget, AppConfig } from './types'
 
 // Chemin vers le fichier de données
 const DATA_DIR = path.join(process.cwd(), 'data')
 const APPS_FILE = path.join(DATA_DIR, 'apps.json')
 const WIDGETS_FILE = path.join(DATA_DIR, 'widgets.json')
+const CONFIG_FILE = path.join(DATA_DIR, 'config.json')
 
 /**
  * Lit la liste des applications depuis le fichier JSON
@@ -174,5 +175,66 @@ export async function writeWidgets(widgets: Widget[]): Promise<void> {
  */
 export function generateWidgetId(): string {
   return `widget_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+}
+
+/**
+ * Lit la configuration de l'application depuis le fichier JSON
+ * 
+ * @returns Promise<AppConfig> - Configuration de l'application avec valeurs par défaut si le fichier n'existe pas
+ * @throws Error si le fichier existe mais ne peut pas être lu ou si les données sont invalides
+ */
+export async function readConfig(): Promise<AppConfig> {
+  try {
+    // Vérifier si le fichier existe
+    await fs.access(CONFIG_FILE)
+    
+    // Lire le contenu du fichier
+    const fileContent = await fs.readFile(CONFIG_FILE, 'utf-8')
+    
+    // Parser le JSON
+    const config = JSON.parse(fileContent) as AppConfig
+    
+    // Valider que c'est bien un objet
+    if (!config || typeof config !== 'object') {
+      throw new Error('Les données doivent être un objet')
+    }
+    
+    // Retourner la configuration avec valeurs par défaut si certains champs manquent
+    return {
+      backgroundEffect: config.backgroundEffect || 'mesh-animated',
+    }
+  } catch (error: any) {
+    // Si le fichier n'existe pas, retourner la configuration par défaut
+    if (error.code === 'ENOENT') {
+      return {
+        backgroundEffect: 'mesh-animated',
+      }
+    }
+    
+    // Pour les autres erreurs, les propager
+    throw error
+  }
+}
+
+/**
+ * Écrit la configuration de l'application dans le fichier JSON
+ * 
+ * @param config - Configuration à sauvegarder
+ * @throws Error si le fichier ne peut pas être écrit
+ */
+export async function writeConfig(config: AppConfig): Promise<void> {
+  try {
+    // Créer le dossier data s'il n'existe pas
+    await fs.mkdir(DATA_DIR, { recursive: true })
+    
+    // Convertir en JSON avec indentation pour la lisibilité
+    const jsonContent = JSON.stringify(config, null, 2)
+    
+    // Écrire dans le fichier
+    await fs.writeFile(CONFIG_FILE, jsonContent, 'utf-8')
+  } catch (error) {
+    // Propager l'erreur avec un message plus clair
+    throw new Error(`Impossible d'écrire la configuration : ${error}`)
+  }
 }
 

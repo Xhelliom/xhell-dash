@@ -239,3 +239,27 @@ export interface SystemInfoWidgetConfig {
   customInfo?: Array<{ label: string; value: string }>
 }
 
+/**
+ * Type d'effet de background disponible
+ */
+export type BackgroundEffect =
+  | 'none'
+  | 'gradient-radial'
+  | 'gradient-linear'
+  | 'gradient-mesh'
+  | 'gradient-animated'
+  | 'glow'
+  | 'grid-pattern'
+  | 'dot-pattern'
+  | 'noise'
+  | 'mesh-animated'
+  | 'shimmer'
+
+/**
+ * Configuration globale de l'application
+ */
+export interface AppConfig {
+  // Effet de background sélectionné
+  backgroundEffect: BackgroundEffect
+}
+
