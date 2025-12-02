@@ -181,3 +181,61 @@ export interface StatsConfig {
   cardStat?: CardStatConfig
 }
 
+/**
+ * Types de widgets disponibles dans le dashboard
+ */
+export type WidgetType = 'clock' | 'weather' | 'system-info' | 'calendar' | 'notes' | 'rss'
+
+/**
+ * Configuration d'un widget
+ */
+export interface Widget {
+  id: string
+  type: WidgetType
+  enabled: boolean
+  // Configuration spécifique au widget (sera typé selon le type)
+  config?: Record<string, any>
+  // Ordre d'affichage
+  order?: number
+}
+
+/**
+ * Configuration pour le widget Clock (horloge)
+ */
+export interface ClockWidgetConfig {
+  // Format d'affichage : '12h' ou '24h'
+  format?: '12h' | '24h'
+  // Afficher la date
+  showDate?: boolean
+  // Afficher les secondes
+  showSeconds?: boolean
+  // Fuseau horaire (optionnel, utilise le fuseau local par défaut)
+  timezone?: string
+}
+
+/**
+ * Configuration pour le widget Weather (météo)
+ */
+export interface WeatherWidgetConfig {
+  // Ville pour la météo
+  city?: string
+  // Code pays (optionnel)
+  countryCode?: string
+  // Clé API OpenWeatherMap (optionnel, peut être configurée globalement)
+  apiKey?: string
+  // Unité de température : 'celsius' ou 'fahrenheit'
+  unit?: 'celsius' | 'fahrenheit'
+}
+
+/**
+ * Configuration pour le widget SystemInfo (informations système)
+ */
+export interface SystemInfoWidgetConfig {
+  // Afficher l'uptime
+  showUptime?: boolean
+  // Afficher la date de dernière mise à jour
+  showLastUpdate?: boolean
+  // Informations personnalisées à afficher
+  customInfo?: Array<{ label: string; value: string }>
+}
+

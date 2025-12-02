@@ -29,6 +29,10 @@ import { AppCard } from '@/components/AppCard'
 import { SortableAppCard } from '@/components/SortableAppCard'
 import { FloatingConfigButton } from '@/components/FloatingConfigButton'
 import { AppForm } from '@/components/AppForm'
+import { WidgetContainer } from '@/components/widgets/WidgetContainer'
+import { WidgetForm } from '@/components/widgets/WidgetForm'
+import { SortableWidgetContainer } from '@/components/widgets/SortableWidgetContainer'
+import type { Widget } from '@/lib/types'
 import {
   Sheet,
   SheetContent,
@@ -36,7 +40,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
-import { Plus, Edit } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import type { App, CreateAppInput } from '@/lib/types'
 
 export default function Home() {
@@ -47,6 +51,11 @@ export default function Home() {
   const [editingApp, setEditingApp] = useState<App | null>(null)
   const [isSavingOrder, setIsSavingOrder] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [widgets, setWidgets] = useState<Widget[]>([])
+  const [isWidgetFormOpen, setIsWidgetFormOpen] = useState(false)
+  const [editingWidget, setEditingWidget] = useState<Widget | null>(null)
+  const [isSavingWidgetOrder, setIsSavingWidgetOrder] = useState(false)
+  const [isDraggingWidget, setIsDraggingWidget] = useState(false)
 
   // Configuration des capteurs pour le drag & drop
   const sensors = useSensors(
@@ -78,7 +87,24 @@ export default function Home() {
   }
 
   /**
-   * Gère le début du drag & drop
+   * Charge la liste des widgets depuis l'API
+   */
+  const loadWidgets = async () => {
+    try {
+      const response = await fetch('/api/widgets')
+      if (response.ok) {
+        const data = await response.json()
+        setWidgets(data)
+      } else {
+        console.error('Erreur lors du chargement des widgets')
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des widgets:', error)
+    }
+  }
+
+  /**
+   * Gère le début du drag & drop pour les apps
    * Masque tous les boutons d'édition
    */
   const handleDragStart = (event: DragStartEvent) => {
@@ -86,7 +112,14 @@ export default function Home() {
   }
 
   /**
-   * Gère la fin du drag & drop
+   * Gère le début du drag & drop pour les widgets
+   */
+  const handleWidgetDragStart = (event: DragStartEvent) => {
+    setIsDraggingWidget(true)
+  }
+
+  /**
+   * Gère la fin du drag & drop pour les apps
    * Met à jour l'ordre localement et sauvegarde via l'API
    */
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -134,6 +167,55 @@ export default function Home() {
       await loadApps()
     } finally {
       setIsSavingOrder(false)
+    }
+  }
+
+  /**
+   * Gère la fin du drag & drop pour les widgets
+   */
+  const handleWidgetDragEnd = async (event: DragEndEvent) => {
+    setIsDraggingWidget(false)
+    
+    const { active, over } = event
+
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    // Trouver les indices des widgets déplacés
+    const oldIndex = widgets.findIndex((widget) => widget.id === active.id)
+    const newIndex = widgets.findIndex((widget) => widget.id === over.id)
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return
+    }
+
+    // Réordonner localement
+    const reorderedWidgets = arrayMove(widgets, oldIndex, newIndex)
+    setWidgets(reorderedWidgets)
+
+    // Sauvegarder le nouvel ordre via l'API
+    setIsSavingWidgetOrder(true)
+    try {
+      const response = await fetch('/api/widgets/reorder', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          widgetIds: reorderedWidgets.map((widget) => widget.id),
+        }),
+      })
+
+      if (!response.ok) {
+        console.error('Erreur lors de la sauvegarde de l\'ordre des widgets')
+        await loadWidgets()
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde de l\'ordre des widgets:', error)
+      await loadWidgets()
+    } finally {
+      setIsSavingWidgetOrder(false)
     }
   }
 
@@ -219,9 +301,91 @@ export default function Home() {
     }
   }
 
-  // Charger les apps au montage du composant
+  /**
+   * Gère l'ajout d'un nouveau widget
+   */
+  const handleAddWidget = () => {
+    setEditingWidget(null)
+    setIsWidgetFormOpen(true)
+  }
+
+  /**
+   * Gère l'édition d'un widget
+   */
+  const handleEditWidget = (widget: Widget) => {
+    setEditingWidget(widget)
+    setIsWidgetFormOpen(true)
+  }
+
+  /**
+   * Gère la suppression d'un widget
+   */
+  const handleDeleteWidget = async (widgetId: string) => {
+    try {
+      const response = await fetch(`/api/widgets/${widgetId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        await loadWidgets()
+      } else {
+        const error = await response.json()
+        alert(`Erreur: ${error.error || 'Impossible de supprimer le widget'}`)
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error)
+      alert('Une erreur est survenue lors de la suppression')
+    }
+  }
+
+  /**
+   * Gère la soumission du formulaire de widget
+   */
+  const handleWidgetFormSubmit = async (data: Partial<Widget>) => {
+    try {
+      if (editingWidget) {
+        // Mode modification
+        const response = await fetch(`/api/widgets/${editingWidget.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Erreur lors de la modification')
+        }
+      } else {
+        // Mode création
+        const response = await fetch('/api/widgets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Erreur lors de la création')
+        }
+      }
+
+      // Fermer le formulaire et recharger les widgets
+      setIsWidgetFormOpen(false)
+      setEditingWidget(null)
+      await loadWidgets()
+    } catch (error: any) {
+      throw error
+    }
+  }
+
+  // Charger les apps et widgets au montage du composant
   useEffect(() => {
     loadApps()
+    loadWidgets()
   }, [])
 
   // Toggle du mode édition depuis le bouton flottant
@@ -238,28 +402,53 @@ export default function Home() {
     }
   }, [])
 
-  // IDs des apps pour le SortableContext
+  // IDs des apps et widgets pour le SortableContext
   const appIds = apps.map((app) => app.id)
+  const widgetIds = widgets.map((widget) => widget.id)
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header avec titre */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            {isEditMode && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                <Edit className="h-4 w-4" />
-                Mode édition
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
       {/* Contenu principal */}
       <main className="container mx-auto px-4 py-8">
+        {/* Section des widgets avec drag & drop en mode édition */}
+        {isEditMode ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleWidgetDragStart}
+            onDragEnd={handleWidgetDragEnd}
+          >
+            <SortableContext items={widgetIds}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+                {widgets.map((widget) => (
+                  <SortableWidgetContainer
+                    key={widget.id}
+                    widget={widget}
+                    onEdit={handleEditWidget}
+                    onDelete={handleDeleteWidget}
+                    showActions={true}
+                    isDragging={isDraggingWidget}
+                  />
+                ))}
+                {/* Bouton + pour ajouter un widget en mode édition */}
+                <div className="flex items-center justify-center min-h-[200px] border-2 border-dashed border-muted-foreground/25 rounded-lg hover:border-primary/50 transition-colors">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={handleAddWidget}
+                    className="h-full w-full flex flex-col gap-2"
+                  >
+                    <Plus className="h-8 w-8" />
+                    <span>Ajouter un widget</span>
+                  </Button>
+                </div>
+              </div>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <WidgetContainer widgets={widgets} />
+        )}
+        
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="text-muted-foreground">Chargement...</div>
@@ -345,6 +534,32 @@ export default function Home() {
               app={editingApp}
               onSubmit={handleAppFormSubmit}
               asSheet={true}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Sheet avec WidgetForm pour ajouter/éditer */}
+      <Sheet open={isWidgetFormOpen} onOpenChange={setIsWidgetFormOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-hidden p-0 flex flex-col">
+          <SheetHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
+            <SheetTitle>
+              {editingWidget ? 'Modifier le widget' : 'Ajouter un widget'}
+            </SheetTitle>
+            <SheetDescription>
+              {editingWidget
+                ? 'Modifiez la configuration du widget'
+                : 'Configurez un nouveau widget pour votre dashboard'}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <WidgetForm
+              widget={editingWidget}
+              onSubmit={handleWidgetFormSubmit}
+              onCancel={() => {
+                setIsWidgetFormOpen(false)
+                setEditingWidget(null)
+              }}
             />
           </div>
         </SheetContent>
