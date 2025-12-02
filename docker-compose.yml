@@ -1,0 +1,37 @@
+# Configuration Docker Compose pour le Dashboard
+#
+# Usage:
+#   docker-compose up -d        # Démarrer en arrière-plan
+#   docker-compose down          # Arrêter
+#   docker-compose logs -f       # Voir les logs
+#   docker-compose up --build    # Reconstruire et démarrer
+
+version: '3.8'
+
+services:
+  # Service principal de l'application dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: xhell-dash
+    ports:
+      # Exposer le port 3000 de l'application sur le port 3000 de l'hôte
+      - "3000:3000"
+    volumes:
+      # Volume persistant pour les données JSONDB
+      # Les applications configurées seront sauvegardées dans ce volume
+      - ./data:/app/data
+    environment:
+      # Port interne de l'application
+      - PORT=3000
+      # Hostname pour écouter sur toutes les interfaces
+      - HOSTNAME=0.0.0.0
+      # Node environment
+      - NODE_ENV=production
+    restart: unless-stopped
+    # Labels pour faciliter la gestion
+    labels:
+      - "com.xhell.dashboard=true"
+      - "com.xhell.version=1.0.0"
+

@@ -1,0 +1,44 @@
+# Fichiers à ignorer lors de la construction de l'image Docker
+
+# Dépendances
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build Next.js
+.next
+out
+dist
+
+# Fichiers de développement
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+README.md
+*.md
+
+# Données (seront montées via volume)
+data
+
