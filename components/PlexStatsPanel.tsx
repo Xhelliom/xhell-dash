@@ -145,9 +145,9 @@ export function PlexStatsPanel({ open, onOpenChange, appId, appName }: PlexStats
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="bottom"
-                className="h-[90vh] max-h-[90vh] overflow-y-auto"
+                className="h-[90vh] max-h-[90vh] overflow-y-auto p-6"
             >
-                <SheetHeader className="pb-4 border-b">
+                <SheetHeader className="pb-4 border-b px-0">
                     <SheetTitle className="text-2xl">Statistiques {appName}</SheetTitle>
                     <SheetDescription>
                         Vue d'ensemble de votre bibliothèque Plex
