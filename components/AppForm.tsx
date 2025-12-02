@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import type { App, CreateAppInput, StatsDisplayOptions, PlexKPIOptions } from '@/lib/types'
+import type { App, CreateAppInput, StatsDisplayOptions, PlexKPIOptions, CardStatType } from '@/lib/types'
 import { STATS_TEMPLATES, getTemplateById } from '@/lib/stats-templates'
 
 interface AppFormProps {
@@ -65,6 +65,9 @@ const POPULAR_ICONS = [
 ]
 
 export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
+  // Référence au formulaire pour la soumission
+  const formRef = useRef<HTMLFormElement>(null)
+
   // État du formulaire
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
@@ -93,9 +96,32 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
     },
   })
 
+  // État pour la configuration de la statistique de carte
+  const [cardStatType, setCardStatType] = useState<CardStatType | ''>('')
+  const [cardStatKey, setCardStatKey] = useState<string>('')
+  const [cardStatLabel, setCardStatLabel] = useState<string>('')
+
   // Vérifier si c'est une application Plex pour afficher les champs spécifiques
   const isPlex = name.toLowerCase() === 'plex'
   const selectedTemplate = selectedTemplateId ? getTemplateById(selectedTemplateId) : null
+
+  // Options de clés disponibles selon le template
+  const getAvailableStatKeys = (): { value: string; label: string }[] => {
+    if (selectedTemplateId === 'plex') {
+      return [
+        { value: 'totalMovies', label: 'Total Films' },
+        { value: 'totalShows', label: 'Total Séries' },
+        { value: 'totalEpisodes', label: 'Total Épisodes' },
+        { value: 'totalUsers', label: 'Total Utilisateurs' },
+        { value: 'totalLibraries', label: 'Total Bibliothèques' },
+      ]
+    }
+    return [
+      { value: 'value', label: 'Valeur' },
+      { value: 'count', label: 'Compte' },
+      { value: 'total', label: 'Total' },
+    ]
+  }
 
   // Réinitialiser le formulaire quand le dialog s'ouvre/ferme ou quand l'app change
   useEffect(() => {
@@ -121,6 +147,16 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
             setDisplayOptions(template.defaultDisplayOptions)
           }
         }
+        // Charger la configuration de la statistique de carte
+        if (app.statsConfig?.cardStat) {
+          setCardStatType(app.statsConfig.cardStat.type)
+          setCardStatKey(app.statsConfig.cardStat.key || '')
+          setCardStatLabel(app.statsConfig.cardStat.label || '')
+        } else {
+          setCardStatType('')
+          setCardStatKey('')
+          setCardStatLabel('')
+        }
       } else {
         // Mode création : réinitialiser
         setName('')
@@ -144,6 +180,9 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
             showLibraries: true,
           },
         })
+        setCardStatType('')
+        setCardStatKey('')
+        setCardStatLabel('')
       }
     }
   }, [open, app])
@@ -288,9 +327,14 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
         statLabel: statLabel.trim() || undefined,
         plexToken: isPlex ? plexToken.trim() || undefined : undefined,
         plexServerUrl: isPlex && plexServerUrl.trim() ? plexServerUrl.trim() : undefined,
-        statsConfig: selectedTemplateId ? {
-          templateId: selectedTemplateId,
-          displayOptions: displayOptions,
+        statsConfig: selectedTemplateId || cardStatType ? {
+          templateId: selectedTemplateId || undefined,
+          displayOptions: selectedTemplateId ? displayOptions : undefined,
+          cardStat: cardStatType ? {
+            type: cardStatType,
+            key: cardStatKey.trim() || undefined,
+            label: cardStatLabel.trim() || undefined,
+          } : undefined,
         } : undefined,
       }
 
@@ -308,8 +352,8 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{app ? 'Modifier l\'application' : 'Ajouter une application'}</DialogTitle>
           <DialogDescription>
             {app
@@ -318,7 +362,8 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex-1 overflow-y-auto pr-1 -mr-1">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
           {/* Nom de l'application */}
           <div className="space-y-2">
             <Label htmlFor="name">Nom *</Label>
@@ -407,6 +452,81 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
               onChange={(e) => setStatLabel(e.target.value)}
               placeholder="Ex: Films, Utilisateurs, Requêtes..."
             />
+          </div>
+
+          {/* Configuration de la statistique sur la carte */}
+          <div className="border-t pt-4 mt-4 space-y-4">
+            <h3 className="text-sm font-semibold">Statistique sur la carte</h3>
+            
+            {/* Type de statistique */}
+            <div className="space-y-2">
+              <Label htmlFor="cardStatType">Type d'affichage</Label>
+              <Select 
+                value={cardStatType || 'none'} 
+                onValueChange={(value) => {
+                  if (value === 'none') {
+                    setCardStatType('')
+                    setCardStatKey('')
+                    setCardStatLabel('')
+                  } else {
+                    setCardStatType(value as CardStatType)
+                  }
+                }}
+              >
+                <SelectTrigger id="cardStatType">
+                  <SelectValue placeholder="Aucun" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucun</SelectItem>
+                  <SelectItem value="number">Nombre</SelectItem>
+                  <SelectItem value="chart">Graphique (courbe)</SelectItem>
+                  {selectedTemplateId === 'plex' && (
+                    <SelectItem value="plex-recent">Images des 3 derniers ajouts (Plex)</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Clé de la statistique (si type = number ou chart) */}
+            {cardStatType && cardStatType !== 'plex-recent' && (
+              <div className="space-y-2">
+                <Label htmlFor="cardStatKey">Clé de la statistique</Label>
+                <Select 
+                  value={cardStatKey} 
+                  onValueChange={setCardStatKey}
+                >
+                  <SelectTrigger id="cardStatKey">
+                    <SelectValue placeholder="Sélectionnez une clé" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableStatKeys().map((key) => (
+                      <SelectItem key={key.value} value={key.value}>
+                        {key.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Clé utilisée pour récupérer la valeur depuis l'API
+                </p>
+              </div>
+            )}
+
+            {/* Libellé personnalisé */}
+            {cardStatType && (
+              <div className="space-y-2">
+                <Label htmlFor="cardStatLabel">Libellé personnalisé (optionnel)</Label>
+                <Input
+                  id="cardStatLabel"
+                  value={cardStatLabel}
+                  onChange={(e) => setCardStatLabel(e.target.value)}
+                  placeholder="Ex: Films, Utilisateurs..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Si vide, le libellé par défaut sera utilisé
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Sélection du template de stats */}
@@ -573,21 +693,30 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
               </div>
             </>
           )}
+          </form>
+        </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Annuler
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Enregistrement...' : app ? 'Modifier' : 'Ajouter'}
-            </Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            Annuler
+          </Button>
+          <Button 
+            type="button"
+            onClick={() => {
+              if (formRef.current) {
+                formRef.current.requestSubmit()
+              }
+            }}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Enregistrement...' : app ? 'Modifier' : 'Ajouter'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

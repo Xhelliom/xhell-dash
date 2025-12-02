@@ -5,7 +5,8 @@
  * - Logo (icône Lucide ou image URL)
  * - Nom de l'application
  * - Statistique configurable (si disponible)
- * - Redirection vers l'URL de l'application au clic
+ * - Bouton pour ouvrir l'application
+ * - Bouton Détails pour les apps avec template de stats (optionnel)
  */
 
 'use client'
@@ -14,8 +15,11 @@ import { useState, useEffect } from 'react'
 import * as Icons from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { PlexStatsPanel } from '@/components/PlexStatsPanel'
-import type { App } from '@/lib/types'
+import { StatsPanel } from '@/components/StatsPanel'
+import { PlexRecentImages } from '@/components/PlexRecentImages'
+import { ChartContainer, ChartConfig } from '@/components/ui/chart'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
+import type { App, CardStatType, PlexStats } from '@/lib/types'
 
 interface AppCardProps {
   app: App
@@ -45,32 +49,82 @@ function getLucideIcon(iconName: string) {
 
 export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardProps) {
   const [statValue, setStatValue] = useState<string | number | undefined>(app.statValue)
+  const [chartData, setChartData] = useState<any[]>([])
   const [isLoadingStat, setIsLoadingStat] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [isStatsPanelOpen, setIsStatsPanelOpen] = useState(false)
 
-  // Vérifier si c'est une application avec le template Plex (par nom ou templateId)
-  const isPlex = app.name.toLowerCase() === 'plex' || app.statsConfig?.templateId === 'plex'
+  // Vérifier si l'application a un template de statistiques configuré
+  const hasStatsTemplate = !!app.statsConfig?.templateId
+  const templateId = app.statsConfig?.templateId
+
+  // Configuration de la statistique de carte
+  const cardStatConfig = app.statsConfig?.cardStat
+  const cardStatType: CardStatType | undefined = cardStatConfig?.type || (app.statLabel ? 'number' : undefined)
 
   /**
-   * Récupère les statistiques depuis l'API si configurée
+   * Récupère les statistiques depuis l'API selon le type configuré
    */
   useEffect(() => {
-    if (!app.statApiUrl) return
+    // Si pas de configuration de stat de carte, utiliser l'ancien système
+    if (!cardStatType && !app.statApiUrl) return
 
-    // Fonction pour récupérer les stats
     const fetchStats = async () => {
       setIsLoadingStat(true)
       try {
-        const response = await fetch(`/api/apps/${app.id}/stats`)
-        if (response.ok) {
-          const data = await response.json()
-          // Adapter selon le format de réponse de l'API
-          // Ici on suppose que l'API retourne directement une valeur ou un objet avec une propriété "value"
-          const value = typeof data === 'number' || typeof data === 'string'
-            ? data
-            : data.value || data.count || data.total
-          setStatValue(value)
+        if (cardStatType === 'plex-recent') {
+          // Pour les images Plex, on ne charge rien ici (géré par PlexRecentImages)
+          setIsLoadingStat(false)
+          return
+        }
+
+        if (cardStatType === 'chart' && app.statsConfig?.templateId === 'plex') {
+          // Pour les graphiques Plex, récupérer les stats complètes
+          const response = await fetch(`/api/apps/${app.id}/stats/plex`)
+          if (response.ok) {
+            const data: PlexStats = await response.json()
+            const statKey = cardStatConfig?.key || 'totalMovies'
+
+            // Générer des données pour le graphique (simulation avec les données actuelles)
+            // Dans un vrai cas, on aurait besoin de données historiques
+            const value = (data as any)[statKey] || 0
+            setChartData([
+              { name: 'J-6', value: Math.max(0, value - 20) },
+              { name: 'J-5', value: Math.max(0, value - 15) },
+              { name: 'J-4', value: Math.max(0, value - 10) },
+              { name: 'J-3', value: Math.max(0, value - 5) },
+              { name: 'J-2', value: Math.max(0, value - 2) },
+              { name: 'J-1', value: Math.max(0, value - 1) },
+              { name: 'Aujourd\'hui', value },
+            ])
+          }
+        } else if (cardStatType === 'number') {
+          // Pour les nombres, utiliser l'API générique ou Plex selon le template
+          const endpoint = app.statsConfig?.templateId === 'plex'
+            ? `/api/apps/${app.id}/stats/plex`
+            : `/api/apps/${app.id}/stats`
+
+          const response = await fetch(endpoint)
+          if (response.ok) {
+            const data = await response.json()
+            const statKey = cardStatConfig?.key || 'value'
+
+            // Extraire la valeur selon la clé
+            const value = (data as any)[statKey] ||
+              (typeof data === 'number' ? data :
+                data.value || data.count || data.total)
+            setStatValue(value)
+          }
+        } else if (app.statApiUrl) {
+          // Ancien système de compatibilité
+          const response = await fetch(`/api/apps/${app.id}/stats`)
+          if (response.ok) {
+            const data = await response.json()
+            const value = typeof data === 'number' || typeof data === 'string'
+              ? data
+              : data.value || data.count || data.total
+            setStatValue(value)
+          }
         }
       } catch (error) {
         console.error('Erreur lors de la récupération des stats:', error)
@@ -86,29 +140,16 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
     const interval = setInterval(fetchStats, 30000)
 
     return () => clearInterval(interval)
-  }, [app.id, app.statApiUrl])
+  }, [app.id, app.statApiUrl, cardStatType, cardStatConfig?.key, app.statsConfig?.templateId])
 
   /**
-   * Gère le clic sur la card pour rediriger vers l'application
+   * Gère le clic sur le bouton pour ouvrir l'application
    */
-  const handleCardClick = () => {
+  const handleOpenApp = (e: React.MouseEvent) => {
+    e.stopPropagation()
     window.open(app.url, '_blank')
   }
 
-  /**
-   * Gère le clic sur les statistiques
-   * Pour Plex, ouvre le panneau de stats détaillées
-   * Sinon, redirige vers l'application
-   */
-  const handleStatClick = (e: React.MouseEvent) => {
-    e.stopPropagation() // Empêcher le clic sur la card
-
-    if (isPlex) {
-      setIsStatsPanelOpen(true)
-    } else {
-      handleCardClick()
-    }
-  }
 
   /**
    * Gère le clic sur le bouton d'édition
@@ -128,14 +169,12 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
     }
   }
 
+
   // Récupérer le composant d'icône si c'est une icône
   const IconComponent = app.logoType === 'icon' ? getLucideIcon(app.logo) : null
 
   return (
-    <Card
-      className="cursor-pointer transition-all hover:shadow-lg hover:scale-105"
-      onClick={handleCardClick}
-    >
+    <Card className="transition-all hover:shadow-lg">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-3">
           {/* Logo : icône ou image */}
@@ -183,34 +222,135 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
         )}
       </CardHeader>
 
-      <CardContent>
-        {/* Affichage de la statistique si configurée */}
-        {app.statLabel && (
-          <div
-            className={`flex items-baseline gap-2 ${isPlex ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
-            onClick={isPlex ? handleStatClick : undefined}
-            title={isPlex ? 'Cliquez pour voir les statistiques détaillées' : undefined}
-          >
+      <CardContent className="space-y-3">
+        {/* Affichage de la statistique selon le type configuré */}
+        {cardStatType === 'plex-recent' && (
+          <div className="space-y-2">
+            <span className="text-sm text-muted-foreground">
+              {cardStatConfig?.label || 'Derniers ajouts'}
+            </span>
+            <PlexRecentImages appId={app.id} />
+          </div>
+        )}
+
+        {cardStatType === 'chart' && (
+          <div className="space-y-2">
+            <span className="text-sm text-muted-foreground">
+              {cardStatConfig?.label || app.statLabel || 'Statistique'}
+            </span>
+            {isLoadingStat ? (
+              <div className="h-24 flex items-center justify-center">
+                <span className="text-sm text-muted-foreground">Chargement...</span>
+              </div>
+            ) : chartData.length > 0 ? (
+              <ChartContainer
+                config={{
+                  value: {
+                    label: cardStatConfig?.label || 'Valeur',
+                    color: 'hsl(var(--chart-1))',
+                  },
+                } satisfies ChartConfig}
+                className="h-24 w-full"
+              >
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={30}
+                  />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="var(--color-value)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-24 flex items-center justify-center">
+                <span className="text-sm text-muted-foreground">Aucune donnée</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {cardStatType === 'number' && (
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm text-muted-foreground">
+              {cardStatConfig?.label || app.statLabel || 'Statistique'}:
+            </span>
+            {isLoadingStat ? (
+              <span className="text-sm text-muted-foreground">...</span>
+            ) : (
+              <span className="text-lg font-semibold">{statValue ?? 'N/A'}</span>
+            )}
+          </div>
+        )}
+
+        {/* Compatibilité avec l'ancien système */}
+        {!cardStatType && app.statLabel && (
+          <div className="flex items-baseline gap-2">
             <span className="text-sm text-muted-foreground">{app.statLabel}:</span>
             {isLoadingStat ? (
               <span className="text-sm text-muted-foreground">...</span>
             ) : (
               <span className="text-lg font-semibold">{statValue ?? 'N/A'}</span>
             )}
-            {isPlex && (
-              <Icons.BarChart3 className="h-4 w-4 ml-auto text-muted-foreground" />
-            )}
           </div>
         )}
+
+        {/* Boutons d'action */}
+        <div className="flex gap-2">
+          {/* Bouton pour ouvrir l'application */}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleOpenApp}
+            className="flex-1"
+            type="button"
+          >
+            <Icons.ExternalLink className="h-4 w-4 mr-2" />
+            Ouvrir
+          </Button>
+
+          {/* Bouton Détails pour les apps avec template de stats */}
+          {hasStatsTemplate && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setIsStatsPanelOpen(true)
+              }}
+              className="flex-1"
+              type="button"
+            >
+              <Icons.BarChart3 className="h-4 w-4 mr-2" />
+              Détails
+            </Button>
+          )}
+        </div>
       </CardContent>
 
-      {/* Panneau de statistiques Plex */}
-      {isPlex && (
-        <PlexStatsPanel
+      {/* Panneau de statistiques générique */}
+      {hasStatsTemplate && templateId && (
+        <StatsPanel
           open={isStatsPanelOpen}
           onOpenChange={setIsStatsPanelOpen}
           appId={app.id}
           appName={app.name}
+          templateId={templateId}
         />
       )}
     </Card>

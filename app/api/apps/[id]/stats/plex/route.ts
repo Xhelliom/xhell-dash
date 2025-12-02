@@ -34,8 +34,8 @@ export async function GET(
     }
 
     // Vérifier que c'est bien une application avec le template Plex
-    const isPlexApp = app.name.toLowerCase() === 'plex' || app.statsConfig?.templateId === 'plex'
-    if (!isPlexApp) {
+    const hasPlexTemplate = app.statsConfig?.templateId === 'plex'
+    if (!hasPlexTemplate) {
       return NextResponse.json(
         { error: 'Cette route est réservée aux applications avec le template Plex' },
         { status: 400 }
@@ -111,7 +111,25 @@ async function fetchPlexStats(baseUrl: string, token: string): Promise<PlexStats
     throw new Error(`Erreur API Plex: ${librariesResponse.status}`)
   }
 
-  const librariesData = await librariesResponse.json()
+  // L'API Plex peut retourner du XML ou du JSON selon le header Accept
+  // Vérifier le Content-Type de la réponse
+  const contentType = librariesResponse.headers.get('content-type') || ''
+  let librariesData
+  
+  if (contentType.includes('application/json')) {
+    librariesData = await librariesResponse.json()
+  } else {
+    // Si c'est du XML, parser le XML (fallback)
+    const xmlText = await librariesResponse.text()
+    // Pour l'instant, on essaie quand même de parser comme JSON
+    // Si ça échoue, on devra parser le XML
+    try {
+      librariesData = JSON.parse(xmlText)
+    } catch {
+      throw new Error('L\'API Plex a retourné du XML au lieu de JSON. Veuillez vérifier la configuration.')
+    }
+  }
+  
   const libraries = librariesData.MediaContainer?.Directory || []
 
   // Calculer les statistiques par type de bibliothèque
@@ -125,17 +143,79 @@ async function fetchPlexStats(baseUrl: string, token: string): Promise<PlexStats
     const libraryType = library.type
     const libraryName = library.title
     let count = 0
+    let episodeCount = 0
 
     // Récupérer le nombre d'éléments dans la bibliothèque
+    // On utilise X-Plex-Container-Size=0 pour obtenir uniquement le totalSize sans charger les éléments
+    // Cela correspond à la méthode totalViewSize de l'API Plex
     try {
       const libraryDetailsResponse = await fetch(
-        `${baseUrl}/library/sections/${library.key}/all`,
+        `${baseUrl}/library/sections/${library.key}/all?X-Plex-Container-Start=0&X-Plex-Container-Size=0&includeCollections=0`,
         { headers, signal: AbortSignal.timeout(5000) }
       )
       
       if (libraryDetailsResponse.ok) {
-        const libraryDetails = await libraryDetailsResponse.json()
-        count = libraryDetails.MediaContainer?.totalSize || 0
+        const responseContentType = libraryDetailsResponse.headers.get('content-type') || ''
+        let libraryDetails
+        
+        if (responseContentType.includes('application/json')) {
+          libraryDetails = await libraryDetailsResponse.json()
+        } else {
+          // Si ce n'est pas du JSON, essayer de parser comme JSON quand même
+          // (certains serveurs Plex retournent du JSON même sans le bon Content-Type)
+          const responseText = await libraryDetailsResponse.text()
+          try {
+            libraryDetails = JSON.parse(responseText)
+          } catch {
+            console.warn(`Réponse non-JSON pour ${libraryName} (type: ${responseContentType}), utilisation de la valeur par défaut`)
+            console.warn(`Premiers caractères de la réponse: ${responseText.substring(0, 100)}`)
+            libraryDetails = { MediaContainer: { totalSize: '0' } }
+          }
+        }
+        
+        // Récupérer le totalSize depuis la réponse
+        // totalSize peut être une string ou un nombre dans la réponse JSON
+        const totalSize = libraryDetails.MediaContainer?.totalSize
+        count = typeof totalSize === 'string' ? parseInt(totalSize, 10) : (totalSize || 0)
+        
+        // Log pour déboguer
+        if (count === 0 && libraryType !== 'photo') {
+          console.log(`Bibliothèque ${libraryName} (${libraryType}): totalSize=${totalSize}, count=${count}`)
+        }
+        
+        // Pour les séries, récupérer aussi le nombre d'épisodes (type=4 = episode)
+        if (libraryType === 'show') {
+          try {
+            const episodesResponse = await fetch(
+              `${baseUrl}/library/sections/${library.key}/all?type=4&X-Plex-Container-Start=0&X-Plex-Container-Size=0&includeCollections=0`,
+              { headers, signal: AbortSignal.timeout(5000) }
+            )
+            
+            if (episodesResponse.ok) {
+              const episodesContentType = episodesResponse.headers.get('content-type') || ''
+              let episodesData
+              
+              if (episodesContentType.includes('application/json')) {
+                episodesData = await episodesResponse.json()
+              } else {
+                const xmlText = await episodesResponse.text()
+                try {
+                  episodesData = JSON.parse(xmlText)
+                } catch {
+                  console.warn(`Réponse XML non parsée pour les épisodes de ${libraryName}`)
+                  episodesData = { MediaContainer: { totalSize: '0' } }
+                }
+              }
+              
+              const episodesTotalSize = episodesData.MediaContainer?.totalSize
+              episodeCount = typeof episodesTotalSize === 'string' 
+                ? parseInt(episodesTotalSize, 10) 
+                : (episodesTotalSize || 0)
+            }
+          } catch (error) {
+            console.warn(`Impossible de récupérer le nombre d'épisodes pour ${libraryName}:`, error)
+          }
+        }
       }
     } catch (error) {
       console.warn(`Impossible de récupérer les détails de la bibliothèque ${libraryName}:`, error)
@@ -152,8 +232,7 @@ async function fetchPlexStats(baseUrl: string, token: string): Promise<PlexStats
       totalMovies += count
     } else if (libraryType === 'show') {
       totalShows += count
-      // Pour les séries, on doit aussi compter les épisodes
-      // On peut faire une requête supplémentaire ou estimer
+      totalEpisodes += episodeCount
     }
   }
 
@@ -208,13 +287,7 @@ async function fetchPlexStats(baseUrl: string, token: string): Promise<PlexStats
     console.warn('Impossible de récupérer le nombre d\'utilisateurs:', error)
   }
 
-  // Pour les épisodes, on peut estimer ou faire une requête supplémentaire
-  // Pour l'instant, on laisse à 0 et on peut l'améliorer plus tard
-  if (totalShows > 0) {
-    // Estimation basique : environ 10 épisodes par série en moyenne
-    // Ce n'est pas précis mais donne une idée
-    totalEpisodes = totalShows * 10
-  }
+  // totalEpisodes est maintenant calculé directement depuis les bibliothèques de séries
 
   return {
     totalMovies,

@@ -4,7 +4,7 @@
  * GET /api/apps/[id]/stats
  * Récupère les stats depuis l'API externe configurée dans statApiUrl
  * 
- * Si l'application est de type Plex, redirige vers le handler spécialisé /stats/plex
+ * Si l'application a un template de stats configuré, redirige vers le handler spécialisé correspondant
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -14,7 +14,7 @@ import { readApps } from '@/lib/db'
  * GET /api/apps/[id]/stats
  * Récupère les statistiques depuis l'API externe
  * 
- * Pour Plex, redirige automatiquement vers /stats/plex pour obtenir des statistiques détaillées
+ * Si l'app a un template de stats (ex: plex, sonarr), redirige automatiquement vers le handler spécialisé
  */
 export async function GET(
   request: NextRequest,
@@ -36,22 +36,23 @@ export async function GET(
       )
     }
 
-    // Si c'est Plex et qu'on demande des stats détaillées (paramètre ?detailed=true)
-    // ou si le nom est exactement "plex", on redirige vers le handler spécialisé
+    // Si l'app a un template de stats configuré et qu'on demande des stats détaillées
+    // on redirige vers le handler spécialisé correspondant
     const searchParams = request.nextUrl.searchParams
     const detailed = searchParams.get('detailed') === 'true'
+    const templateId = app.statsConfig?.templateId
     
-    if (app.name.toLowerCase() === 'plex' && detailed) {
-      // Rediriger vers le handler Plex spécialisé
-      const plexResponse = await fetch(`${request.nextUrl.origin}/api/apps/${id}/stats/plex`, {
+    if (templateId && detailed) {
+      // Rediriger vers le handler spécialisé selon le templateId
+      const statsResponse = await fetch(`${request.nextUrl.origin}/api/apps/${id}/stats/${templateId}`, {
         headers: {
           'Content-Type': 'application/json',
         },
       })
       
-      if (plexResponse.ok) {
-        const plexData = await plexResponse.json()
-        return NextResponse.json(plexData, { status: 200 })
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json()
+        return NextResponse.json(statsData, { status: 200 })
       }
     }
     
