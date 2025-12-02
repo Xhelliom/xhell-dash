@@ -26,7 +26,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { App, CreateAppInput } from '@/lib/types'
+import { Checkbox } from '@/components/ui/checkbox'
+import type { App, CreateAppInput, StatsDisplayOptions, PlexKPIOptions } from '@/lib/types'
+import { STATS_TEMPLATES, getTemplateById } from '@/lib/stats-templates'
 
 interface AppFormProps {
   open: boolean
@@ -70,7 +72,30 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
   const [logo, setLogo] = useState('')
   const [statApiUrl, setStatApiUrl] = useState('')
   const [statLabel, setStatLabel] = useState('')
+  const [plexToken, setPlexToken] = useState('')
+  const [plexServerUrl, setPlexServerUrl] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // État pour le template de stats sélectionné
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
+
+  // État pour les options d'affichage
+  const [displayOptions, setDisplayOptions] = useState<StatsDisplayOptions>({
+    showKPIs: true,
+    showLibraryChart: true,
+    showRecentMedia: true,
+    kpiOptions: {
+      showMovies: true,
+      showShows: true,
+      showEpisodes: true,
+      showUsers: true,
+      showLibraries: true,
+    },
+  })
+
+  // Vérifier si c'est une application Plex pour afficher les champs spécifiques
+  const isPlex = name.toLowerCase() === 'plex'
+  const selectedTemplate = selectedTemplateId ? getTemplateById(selectedTemplateId) : null
 
   // Réinitialiser le formulaire quand le dialog s'ouvre/ferme ou quand l'app change
   useEffect(() => {
@@ -83,6 +108,19 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
         setLogo(app.logo)
         setStatApiUrl(app.statApiUrl || '')
         setStatLabel(app.statLabel || '')
+        setPlexToken((app as any).plexToken || '')
+        setPlexServerUrl((app as any).plexServerUrl || app.url)
+        // Charger le template et les options d'affichage
+        const templateId = app.statsConfig?.templateId || ''
+        setSelectedTemplateId(templateId)
+        if (app.statsConfig?.displayOptions) {
+          setDisplayOptions(app.statsConfig.displayOptions)
+        } else if (templateId) {
+          const template = getTemplateById(templateId)
+          if (template) {
+            setDisplayOptions(template.defaultDisplayOptions)
+          }
+        }
       } else {
         // Mode création : réinitialiser
         setName('')
@@ -91,6 +129,21 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
         setLogo('')
         setStatApiUrl('')
         setStatLabel('')
+        setPlexToken('')
+        setPlexServerUrl('')
+        setSelectedTemplateId('')
+        setDisplayOptions({
+          showKPIs: true,
+          showLibraryChart: true,
+          showRecentMedia: true,
+          kpiOptions: {
+            showMovies: true,
+            showShows: true,
+            showEpisodes: true,
+            showUsers: true,
+            showLibraries: true,
+          },
+        })
       }
     }
   }, [open, app])
@@ -133,7 +186,84 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
         return false
       }
     }
+    // Validation spécifique pour Plex
+    if (isPlex) {
+      if (!plexToken.trim()) {
+        alert('Le token Plex est obligatoire pour les applications Plex')
+        return false
+      }
+      if (plexServerUrl && plexServerUrl.trim()) {
+        try {
+          new URL(plexServerUrl)
+        } catch {
+          alert('L\'URL du serveur Plex n\'est pas valide')
+          return false
+        }
+      }
+    }
     return true
+  }
+
+  /**
+   * Gère le changement de template
+   */
+  const handleTemplateChange = (templateId: string) => {
+    // Si la valeur est undefined ou vide, réinitialiser
+    if (!templateId || templateId === 'none') {
+      setSelectedTemplateId('')
+      return
+    }
+
+    setSelectedTemplateId(templateId)
+
+    const template = getTemplateById(templateId)
+    if (template) {
+      // Appliquer le template pour pré-remplir les champs
+      const updatedValues = template.applyTemplate({
+        name,
+        url,
+        logo,
+        logoType,
+        statLabel,
+      })
+
+      if (updatedValues.name) setName(updatedValues.name)
+      if (updatedValues.logo) setLogo(updatedValues.logo)
+      if (updatedValues.logoType) setLogoType(updatedValues.logoType)
+      if (updatedValues.statLabel) setStatLabel(updatedValues.statLabel)
+
+      // Appliquer les options d'affichage par défaut
+      setDisplayOptions(template.defaultDisplayOptions)
+    }
+  }
+
+  /**
+   * Met à jour une option d'affichage spécifique
+   */
+  const updateDisplayOption = <K extends keyof StatsDisplayOptions>(
+    key: K,
+    value: StatsDisplayOptions[K]
+  ) => {
+    setDisplayOptions((prev) => ({
+      ...prev,
+      [key]: value,
+    }))
+  }
+
+  /**
+   * Met à jour une option KPI spécifique
+   */
+  const updateKPIOption = <K extends keyof PlexKPIOptions>(
+    key: K,
+    value: boolean
+  ) => {
+    setDisplayOptions((prev) => ({
+      ...prev,
+      kpiOptions: {
+        ...prev.kpiOptions,
+        [key]: value,
+      },
+    }))
   }
 
   /**
@@ -156,10 +286,16 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
         logo: logo.trim(),
         statApiUrl: statApiUrl.trim() || undefined,
         statLabel: statLabel.trim() || undefined,
+        plexToken: isPlex ? plexToken.trim() || undefined : undefined,
+        plexServerUrl: isPlex && plexServerUrl.trim() ? plexServerUrl.trim() : undefined,
+        statsConfig: selectedTemplateId ? {
+          templateId: selectedTemplateId,
+          displayOptions: displayOptions,
+        } : undefined,
       }
 
       await onSubmit(formData)
-      
+
       // Fermer le dialog après succès
       onOpenChange(false)
     } catch (error) {
@@ -272,6 +408,171 @@ export function AppForm({ open, onOpenChange, app, onSubmit }: AppFormProps) {
               placeholder="Ex: Films, Utilisateurs, Requêtes..."
             />
           </div>
+
+          {/* Sélection du template de stats */}
+          <div className="space-y-2">
+            <Label htmlFor="statsTemplate">Template de statistiques (optionnel)</Label>
+            <Select value={selectedTemplateId || undefined} onValueChange={handleTemplateChange}>
+              <SelectTrigger id="statsTemplate">
+                <SelectValue placeholder="Aucun template" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATS_TEMPLATES.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.name} - {template.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedTemplate && (
+              <p className="text-xs text-muted-foreground">
+                {selectedTemplate.description}
+              </p>
+            )}
+          </div>
+
+          {/* Options d'affichage si un template est sélectionné */}
+          {selectedTemplate && (
+            <div className="border-t pt-4 mt-4 space-y-4">
+              <h3 className="text-sm font-semibold">Options d'affichage</h3>
+
+              {/* Options générales */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="showKPIs"
+                    checked={displayOptions.showKPIs ?? true}
+                    onCheckedChange={(checked) => updateDisplayOption('showKPIs', checked === true)}
+                  />
+                  <Label htmlFor="showKPIs" className="cursor-pointer">
+                    Afficher les KPI
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="showLibraryChart"
+                    checked={displayOptions.showLibraryChart ?? true}
+                    onCheckedChange={(checked) => updateDisplayOption('showLibraryChart', checked === true)}
+                  />
+                  <Label htmlFor="showLibraryChart" className="cursor-pointer">
+                    Afficher le graphique des bibliothèques
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="showRecentMedia"
+                    checked={displayOptions.showRecentMedia ?? true}
+                    onCheckedChange={(checked) => updateDisplayOption('showRecentMedia', checked === true)}
+                  />
+                  <Label htmlFor="showRecentMedia" className="cursor-pointer">
+                    Afficher les derniers médias ajoutés
+                  </Label>
+                </div>
+              </div>
+
+              {/* Options spécifiques pour les KPI (si le template est Plex) */}
+              {selectedTemplate.id === 'plex' && displayOptions.showKPIs && (
+                <div className="ml-6 space-y-2 border-l pl-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Éléments KPI à afficher :</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="showMovies"
+                        checked={displayOptions.kpiOptions?.showMovies ?? true}
+                        onCheckedChange={(checked) => updateKPIOption('showMovies', checked === true)}
+                      />
+                      <Label htmlFor="showMovies" className="cursor-pointer text-sm">
+                        Films
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="showShows"
+                        checked={displayOptions.kpiOptions?.showShows ?? true}
+                        onCheckedChange={(checked) => updateKPIOption('showShows', checked === true)}
+                      />
+                      <Label htmlFor="showShows" className="cursor-pointer text-sm">
+                        Séries
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="showEpisodes"
+                        checked={displayOptions.kpiOptions?.showEpisodes ?? true}
+                        onCheckedChange={(checked) => updateKPIOption('showEpisodes', checked === true)}
+                      />
+                      <Label htmlFor="showEpisodes" className="cursor-pointer text-sm">
+                        Épisodes
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="showUsers"
+                        checked={displayOptions.kpiOptions?.showUsers ?? true}
+                        onCheckedChange={(checked) => updateKPIOption('showUsers', checked === true)}
+                      />
+                      <Label htmlFor="showUsers" className="cursor-pointer text-sm">
+                        Utilisateurs
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="showLibraries"
+                        checked={displayOptions.kpiOptions?.showLibraries ?? true}
+                        onCheckedChange={(checked) => updateKPIOption('showLibraries', checked === true)}
+                      />
+                      <Label htmlFor="showLibraries" className="cursor-pointer text-sm">
+                        Bibliothèques
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Champs spécifiques pour Plex */}
+          {isPlex && (
+            <>
+              <div className="border-t pt-4 mt-4">
+                <h3 className="text-sm font-semibold mb-3">Configuration Plex</h3>
+
+                {/* URL du serveur Plex */}
+                <div className="space-y-2 mb-4">
+                  <Label htmlFor="plexServerUrl">URL du serveur Plex (optionnel)</Label>
+                  <Input
+                    id="plexServerUrl"
+                    type="url"
+                    value={plexServerUrl}
+                    onChange={(e) => setPlexServerUrl(e.target.value)}
+                    placeholder={url || "http://localhost:32400"}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Par défaut, l'URL de l'application sera utilisée. Spécifiez une URL différente si nécessaire.
+                  </p>
+                </div>
+
+                {/* Token Plex */}
+                <div className="space-y-2">
+                  <Label htmlFor="plexToken">Token Plex *</Label>
+                  <Input
+                    id="plexToken"
+                    type="password"
+                    value={plexToken}
+                    onChange={(e) => setPlexToken(e.target.value)}
+                    placeholder="Votre token d'authentification Plex"
+                    required={isPlex}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Le token Plex est nécessaire pour récupérer les statistiques détaillées.
+                    Vous pouvez le trouver dans les paramètres de votre serveur Plex.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
 
           <DialogFooter>
             <Button

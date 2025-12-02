@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react'
 import * as Icons from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PlexStatsPanel } from '@/components/PlexStatsPanel'
 import type { App } from '@/lib/types'
 
 interface AppCardProps {
@@ -34,11 +35,11 @@ function getLucideIcon(iconName: string) {
   const cleanName = iconName
     .replace(/\s+/g, '')
     .replace(/[^a-zA-Z0-9]/g, '')
-  
+
   // Chercher l'icône dans les exports de lucide-react
   // Par défaut, on utilise Grid3x3 si l'icône n'est pas trouvée
   const IconComponent = (Icons as any)[cleanName] || Icons.Grid3x3
-  
+
   return IconComponent
 }
 
@@ -46,6 +47,10 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
   const [statValue, setStatValue] = useState<string | number | undefined>(app.statValue)
   const [isLoadingStat, setIsLoadingStat] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [isStatsPanelOpen, setIsStatsPanelOpen] = useState(false)
+
+  // Vérifier si c'est une application avec le template Plex (par nom ou templateId)
+  const isPlex = app.name.toLowerCase() === 'plex' || app.statsConfig?.templateId === 'plex'
 
   /**
    * Récupère les statistiques depuis l'API si configurée
@@ -62,8 +67,8 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
           const data = await response.json()
           // Adapter selon le format de réponse de l'API
           // Ici on suppose que l'API retourne directement une valeur ou un objet avec une propriété "value"
-          const value = typeof data === 'number' || typeof data === 'string' 
-            ? data 
+          const value = typeof data === 'number' || typeof data === 'string'
+            ? data
             : data.value || data.count || data.total
           setStatValue(value)
         }
@@ -91,6 +96,21 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
   }
 
   /**
+   * Gère le clic sur les statistiques
+   * Pour Plex, ouvre le panneau de stats détaillées
+   * Sinon, redirige vers l'application
+   */
+  const handleStatClick = (e: React.MouseEvent) => {
+    e.stopPropagation() // Empêcher le clic sur la card
+
+    if (isPlex) {
+      setIsStatsPanelOpen(true)
+    } else {
+      handleCardClick()
+    }
+  }
+
+  /**
    * Gère le clic sur le bouton d'édition
    */
   const handleEdit = (e: React.MouseEvent) => {
@@ -112,7 +132,7 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
   const IconComponent = app.logoType === 'icon' ? getLucideIcon(app.logo) : null
 
   return (
-    <Card 
+    <Card
       className="cursor-pointer transition-all hover:shadow-lg hover:scale-105"
       onClick={handleCardClick}
     >
@@ -125,8 +145,8 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
             ) : imageError ? (
               <Icons.Grid3x3 className="h-8 w-8 text-primary" />
             ) : (
-              <img 
-                src={app.logo} 
+              <img
+                src={app.logo}
                 alt={app.name}
                 className="h-8 w-8 object-contain"
                 onError={() => setImageError(true)}
@@ -135,7 +155,7 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
           </div>
           <CardTitle className="text-lg">{app.name}</CardTitle>
         </div>
-        
+
         {/* Boutons d'action si activés */}
         {showActions && (
           <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
@@ -162,20 +182,37 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
           </div>
         )}
       </CardHeader>
-      
+
       <CardContent>
         {/* Affichage de la statistique si configurée */}
         {app.statLabel && (
-          <div className="flex items-baseline gap-2">
+          <div
+            className={`flex items-baseline gap-2 ${isPlex ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+            onClick={isPlex ? handleStatClick : undefined}
+            title={isPlex ? 'Cliquez pour voir les statistiques détaillées' : undefined}
+          >
             <span className="text-sm text-muted-foreground">{app.statLabel}:</span>
             {isLoadingStat ? (
               <span className="text-sm text-muted-foreground">...</span>
             ) : (
               <span className="text-lg font-semibold">{statValue ?? 'N/A'}</span>
             )}
+            {isPlex && (
+              <Icons.BarChart3 className="h-4 w-4 ml-auto text-muted-foreground" />
+            )}
           </div>
         )}
       </CardContent>
+
+      {/* Panneau de statistiques Plex */}
+      {isPlex && (
+        <PlexStatsPanel
+          open={isStatsPanelOpen}
+          onOpenChange={setIsStatsPanelOpen}
+          appId={app.id}
+          appName={app.name}
+        />
+      )}
     </Card>
   )
 }

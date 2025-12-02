@@ -95,6 +95,8 @@ export async function POST(request: NextRequest) {
       logoType: body.logoType,
       statApiUrl: body.statApiUrl,
       statLabel: body.statLabel,
+      plexToken: body.plexToken,
+      plexServerUrl: body.plexServerUrl,
     }
     
     // Ajouter à la liste

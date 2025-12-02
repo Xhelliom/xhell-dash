@@ -3,6 +3,8 @@
  * 
  * GET /api/apps/[id]/stats
  * Récupère les stats depuis l'API externe configurée dans statApiUrl
+ * 
+ * Si l'application est de type Plex, redirige vers le handler spécialisé /stats/plex
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -11,6 +13,8 @@ import { readApps } from '@/lib/db'
 /**
  * GET /api/apps/[id]/stats
  * Récupère les statistiques depuis l'API externe
+ * 
+ * Pour Plex, redirige automatiquement vers /stats/plex pour obtenir des statistiques détaillées
  */
 export async function GET(
   request: NextRequest,
@@ -31,7 +35,27 @@ export async function GET(
         { status: 404 }
       )
     }
+
+    // Si c'est Plex et qu'on demande des stats détaillées (paramètre ?detailed=true)
+    // ou si le nom est exactement "plex", on redirige vers le handler spécialisé
+    const searchParams = request.nextUrl.searchParams
+    const detailed = searchParams.get('detailed') === 'true'
     
+    if (app.name.toLowerCase() === 'plex' && detailed) {
+      // Rediriger vers le handler Plex spécialisé
+      const plexResponse = await fetch(`${request.nextUrl.origin}/api/apps/${id}/stats/plex`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (plexResponse.ok) {
+        const plexData = await plexResponse.json()
+        return NextResponse.json(plexData, { status: 200 })
+      }
+    }
+    
+    // Comportement par défaut : API générique
     // Vérifier si une API de stats est configurée
     if (!app.statApiUrl) {
       return NextResponse.json(

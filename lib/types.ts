@@ -33,6 +33,11 @@ export interface App {
   statApiUrl?: string
   statLabel?: string
   statValue?: string | number
+  // Champs spécifiques pour Plex
+  plexToken?: string
+  plexServerUrl?: string
+  // Configuration des statistiques
+  statsConfig?: StatsConfig
 }
 
 /**
@@ -45,6 +50,9 @@ export interface CreateAppInput {
   logoType: LogoType
   statApiUrl?: string
   statLabel?: string
+  plexToken?: string
+  plexServerUrl?: string
+  statsConfig?: StatsConfig
 }
 
 /**
@@ -58,5 +66,88 @@ export interface UpdateAppInput {
   statApiUrl?: string
   statLabel?: string
   statValue?: string | number
+  plexToken?: string
+  plexServerUrl?: string
+  statsConfig?: StatsConfig
+}
+
+/**
+ * Types de statistiques supportés par l'application
+ */
+export type StatsType = 'generic' | 'plex' | 'sonarr'
+
+/**
+ * Interface pour les statistiques Plex
+ */
+export interface PlexStats {
+  // KPI principaux
+  totalMovies: number
+  totalShows: number
+  totalEpisodes: number
+  totalUsers: number
+  totalLibraries: number
+  
+  // Derniers médias ajoutés
+  recentMedia: PlexRecentMedia[]
+  
+  // Statistiques par type de bibliothèque
+  libraryStats: PlexLibraryStat[]
+}
+
+/**
+ * Interface pour un média récemment ajouté dans Plex
+ */
+export interface PlexRecentMedia {
+  title: string
+  type: 'movie' | 'episode'
+  library: string
+  addedAt: string
+  year?: number
+  thumb?: string
+  ratingKey: string
+}
+
+/**
+ * Interface pour les statistiques d'une bibliothèque Plex
+ */
+export interface PlexLibraryStat {
+  name: string
+  type: 'movie' | 'show' | 'music' | 'photo'
+  count: number
+}
+
+/**
+ * Options d'affichage pour les KPI Plex
+ */
+export interface PlexKPIOptions {
+  showMovies?: boolean
+  showShows?: boolean
+  showEpisodes?: boolean
+  showUsers?: boolean
+  showLibraries?: boolean
+}
+
+/**
+ * Options d'affichage pour les statistiques
+ */
+export interface StatsDisplayOptions {
+  // Afficher les KPI
+  showKPIs?: boolean
+  // Afficher le graphique des bibliothèques
+  showLibraryChart?: boolean
+  // Afficher les derniers médias ajoutés
+  showRecentMedia?: boolean
+  // Options spécifiques pour les KPI (si applicable)
+  kpiOptions?: PlexKPIOptions
+}
+
+/**
+ * Configuration des statistiques pour une application
+ */
+export interface StatsConfig {
+  // Template de stats utilisé (ex: 'plex', 'sonarr', 'generic')
+  templateId?: string
+  // Options d'affichage personnalisées
+  displayOptions?: StatsDisplayOptions
 }
 
