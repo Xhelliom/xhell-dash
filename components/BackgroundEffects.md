@@ -105,3 +105,4 @@ Pour ajuster l'intensité, modifiez les valeurs d'opacité dans `app/globals.css
 <div className="min-h-screen bg-background bg-dot-pattern bg-noise">
 ```
 
+
