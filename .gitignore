@@ -37,3 +37,10 @@ next-env.d.ts
 
 # données JSONDB (peut être ignoré si vous voulez versionner les apps par défaut)
 /data
+
+# env
+.env
+
+#database
+/prisma/migrations
+/dev.db
