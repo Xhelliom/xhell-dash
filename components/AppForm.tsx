@@ -8,6 +8,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import * as Icons from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -64,6 +65,25 @@ const POPULAR_ICONS = [
   'Activity',
   'BarChart',
 ]
+
+/**
+ * Récupère dynamiquement une icône Lucide par son nom
+ * 
+ * @param iconName - Nom de l'icône (ex: "Plex", "Home")
+ * @returns Composant d'icône ou Grid3x3 si non trouvé
+ */
+function getLucideIcon(iconName: string) {
+  // Nettoyer le nom de l'icône (enlever espaces, mettre en PascalCase)
+  const cleanName = iconName
+    .replace(/\s+/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+
+  // Chercher l'icône dans les exports de lucide-react
+  // Par défaut, on utilise Grid3x3 si l'icône n'est pas trouvée
+  const IconComponent = (Icons as any)[cleanName] || Icons.Grid3x3
+
+  return IconComponent
+}
 
 export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: AppFormProps) {
   // Référence au formulaire pour la soumission
@@ -132,7 +152,8 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
         setName(app.name)
         setUrl(app.url)
         setLogoType(app.logoType)
-        setLogo(app.logo)
+        // S'assurer que logo n'est pas une chaîne vide
+        setLogo(app.logo || '')
         setStatApiUrl(app.statApiUrl || '')
         setStatLabel(app.statLabel || '')
         setPlexToken((app as any).plexToken || '')
@@ -399,16 +420,24 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
           <div className="space-y-2">
             <Label htmlFor="logo">Logo *</Label>
             {logoType === 'icon' ? (
-              <Select value={logo} onValueChange={setLogo}>
-                <SelectTrigger id="logo">
+              <Select
+                key={`icon-select-${logo || 'empty'}-${open}`}
+                value={logo ? logo : undefined}
+                onValueChange={setLogo}
+              >
+                <SelectTrigger id="logo" className="w-full">
                   <SelectValue placeholder="Sélectionnez une icône" />
                 </SelectTrigger>
                 <SelectContent>
-                  {POPULAR_ICONS.map((icon) => (
-                    <SelectItem key={icon} value={icon}>
-                      {icon}
-                    </SelectItem>
-                  ))}
+                  {POPULAR_ICONS.map((icon) => {
+                    const IconComponent = getLucideIcon(icon)
+                    return (
+                      <SelectItem key={icon} value={icon}>
+                        <IconComponent className="h-4 w-4 inline-block mr-2" />
+                        {icon}
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             ) : (
@@ -449,12 +478,12 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
           {/* Configuration de la statistique sur la carte */}
           <div className="border-t pt-4 mt-4 space-y-4">
             <h3 className="text-sm font-semibold">Statistique sur la carte</h3>
-            
+
             {/* Type de statistique */}
             <div className="space-y-2">
               <Label htmlFor="cardStatType">Type d'affichage</Label>
-              <Select 
-                value={cardStatType || 'none'} 
+              <Select
+                value={cardStatType || 'none'}
                 onValueChange={(value) => {
                   if (value === 'none') {
                     setCardStatType('')
@@ -480,11 +509,11 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
             </div>
 
             {/* Clé de la statistique (si type = number ou chart) */}
-            {cardStatType && cardStatType !== 'plex-recent' && (
+            {cardStatType && cardStatType !== ('plex-recent' as any) && (
               <div className="space-y-2">
                 <Label htmlFor="cardStatKey">Clé de la statistique</Label>
-                <Select 
-                  value={cardStatKey} 
+                <Select
+                  value={cardStatKey}
                   onValueChange={setCardStatKey}
                 >
                   <SelectTrigger id="cardStatKey">
@@ -685,31 +714,31 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
               </div>
             </>
           )}
-          </form>
-        </div>
+        </form>
+      </div>
 
-        {/* Footer avec boutons */}
-        <div className="flex-shrink-0 border-t pt-4 mt-4 flex justify-end gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
-          >
-            Annuler
-          </Button>
-          <Button 
-            type="button"
-            onClick={() => {
-              if (formRef.current) {
-                formRef.current.requestSubmit()
-              }
-            }}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Enregistrement...' : app ? 'Modifier' : 'Ajouter'}
-          </Button>
-        </div>
+      {/* Footer avec boutons */}
+      <div className="flex-shrink-0 border-t pt-4 mt-4 flex justify-end gap-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => onOpenChange(false)}
+          disabled={isSubmitting}
+        >
+          Annuler
+        </Button>
+        <Button
+          type="button"
+          onClick={() => {
+            if (formRef.current) {
+              formRef.current.requestSubmit()
+            }
+          }}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Enregistrement...' : app ? 'Modifier' : 'Ajouter'}
+        </Button>
+      </div>
     </>
   )
 
