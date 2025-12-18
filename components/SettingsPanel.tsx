@@ -164,7 +164,7 @@ export function SettingsPanel({ onConfigChange, onSaveRef }: SettingsPanelProps)
 
     // Programmer la sauvegarde après 500ms d'inactivité
     saveTimeoutRef.current = setTimeout(() => {
-      saveConfig(true, true) // Sauvegarder en mode silencieux, skip notify
+      saveConfig(true, false) // Sauvegarder en mode silencieux mais notifier le parent pour appliquer les changements
     }, 500)
 
     // Nettoyage

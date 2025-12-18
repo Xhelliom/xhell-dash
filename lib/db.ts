@@ -200,11 +200,30 @@ export async function readConfig(): Promise<AppConfig> {
       throw new Error('Les données doivent être un objet')
     }
     
+    // Migration: convertir spacing en density si présent
+    let stylePreset = config.stylePreset || defaultStylePreset
+    if (stylePreset && 'spacing' in stylePreset && !('density' in stylePreset)) {
+      // Migration depuis l'ancienne structure (spacing -> density)
+      const spacingToDensity: Record<string, 'compact' | 'normal' | 'comfortable'> = {
+        'compact': 'compact',
+        'normal': 'normal',
+        'spacious': 'comfortable',
+      }
+      const oldSpacing = (stylePreset as any).spacing as string
+      const newDensity = spacingToDensity[oldSpacing] || 'normal'
+      stylePreset = {
+        ...stylePreset,
+        density: newDensity,
+      }
+      // Supprimer l'ancienne propriété spacing
+      delete (stylePreset as any).spacing
+    }
+    
     // Retourner la configuration avec valeurs par défaut si certains champs manquent
     return {
       backgroundEffect: config.backgroundEffect || 'mesh-animated',
       theme: config.theme || 'default',
-      stylePreset: config.stylePreset || defaultStylePreset,
+      stylePreset: stylePreset || defaultStylePreset,
     }
   } catch (error: any) {
     // Si le fichier n'existe pas, retourner la configuration par défaut

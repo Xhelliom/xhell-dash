@@ -54,14 +54,15 @@ export function applyStylePreset(preset: StylePreset): void {
 
   // Appliquer la densité comme variable CSS pour utilisation dans les composants
   // La densité est un multiplicateur qui peut être utilisé pour ajuster gaps, paddings, etc.
-  root.style.setProperty('--density', densityValues[preset.density].toString())
+  const densityValue = densityValues[preset.density] ?? 1.0
+  root.style.setProperty('--density', String(densityValue))
   
   // Calculer les gaps en fonction de la densité
   // Gap de base pour les cards : 1.5rem (24px) en normal (équivalent à gap-6 de Tailwind)
   // Gap de base pour les widgets : 1rem (16px) en normal (équivalent à gap-4 de Tailwind)
   const baseGapCards = 1.5 // 1.5rem
   const baseGapWidgets = 1.0 // 1rem
-  const densityMultiplier = densityValues[preset.density]
+  const densityMultiplier = densityValue
   
   root.style.setProperty('--gap-cards', `${baseGapCards * densityMultiplier}rem`)
   root.style.setProperty('--gap-widgets', `${baseGapWidgets * densityMultiplier}rem`)

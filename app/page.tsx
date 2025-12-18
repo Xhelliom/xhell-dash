@@ -37,6 +37,7 @@ import { Background } from '@/components/Background'
 import type { Widget, BackgroundEffect, AppConfig, ThemeId } from '@/lib/types'
 import { applyTheme, resetTheme } from '@/lib/theme-utils'
 import { getThemeById } from '@/lib/themes'
+import { applyStylePreset, resetStyle } from '@/lib/style-utils'
 import { useTheme } from 'next-themes'
 import {
   Sheet,
@@ -144,12 +145,12 @@ export default function Home() {
       if (response.ok) {
         const config: AppConfig = await response.json()
         setBackgroundEffect(config.backgroundEffect || 'mesh-animated')
-        
+
         // Appliquer le thème de couleur
         const newTheme = config.theme || 'default'
         setTheme(newTheme)
         applyColorTheme(newTheme)
-        
+
         // Appliquer le preset de style
         if (config.stylePreset) {
           applyStylePreset(config.stylePreset)
@@ -672,7 +673,7 @@ export default function Home() {
       {/* Se transforme en bouton "Sauvegarder" quand le drawer est ouvert sur l'onglet settings */}
       {/* Se décale à côté du drawer quand il est ouvert pour éviter le chevauchement */}
       {isEditMode && (
-        <div 
+        <div
           className={cn(
             "fixed bottom-6 z-[101] transition-all duration-300 ease-in-out",
             // Position normale : en bas à gauche
@@ -685,7 +686,7 @@ export default function Home() {
           )}
           style={{ pointerEvents: 'auto' }}
         >
-          <BackgroundConfigButton 
+          <BackgroundConfigButton
             onClick={() => {
               // Ne pas ouvrir si on vient juste de sauvegarder
               if (!justSavedRef.current) {
@@ -772,8 +773,8 @@ export default function Home() {
                 <TabsTrigger value="widgets">Widgets</TabsTrigger>
               </TabsList>
               <TabsContent value="settings" className="mt-4">
-                <SettingsPanel 
-                  onConfigChange={handleConfigChange} 
+                <SettingsPanel
+                  onConfigChange={handleConfigChange}
                   onSaveRef={handleSaveRef}
                 />
               </TabsContent>

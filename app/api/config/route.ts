@@ -39,10 +39,27 @@ export async function PUT(request: NextRequest) {
     // Lire la configuration actuelle
     const currentConfig = await readConfig()
 
+    // Migration: convertir spacing en density si présent dans les nouvelles valeurs
+    let mergedConfig = { ...config }
+    if (mergedConfig.stylePreset && 'spacing' in mergedConfig.stylePreset && !('density' in mergedConfig.stylePreset)) {
+      const spacingToDensity: Record<string, 'compact' | 'normal' | 'comfortable'> = {
+        'compact': 'compact',
+        'normal': 'normal',
+        'spacious': 'comfortable',
+      }
+      const oldSpacing = (mergedConfig.stylePreset as any).spacing as string
+      const newDensity = spacingToDensity[oldSpacing] || 'normal'
+      mergedConfig.stylePreset = {
+        ...mergedConfig.stylePreset,
+        density: newDensity,
+      }
+      delete (mergedConfig.stylePreset as any).spacing
+    }
+
     // Fusionner avec les nouvelles valeurs
     const updatedConfig: AppConfig = {
       ...currentConfig,
-      ...config,
+      ...mergedConfig,
     }
 
     // Valider que backgroundEffect est valide si fourni
