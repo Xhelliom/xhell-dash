@@ -628,7 +628,7 @@ export default function Home() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={appIds}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" style={{ gap: 'var(--gap-cards, 1.5rem)' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-stretch" style={{ gap: 'var(--gap-cards, 1.5rem)' }}>
                 {apps.map((app) =>
                   isEditMode ? (
                     <SortableAppCard

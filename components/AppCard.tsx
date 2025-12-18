@@ -97,7 +97,7 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
   const IconComponent = app.logoType === 'icon' ? getLucideIcon(app.logo) : null
 
   return (
-    <Card className="transition-all hover:shadow-lg">
+    <Card className="h-full transition-all hover:shadow-lg">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-3">
           {/* Logo : icône ou image */}
@@ -145,22 +145,25 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
         )}
       </CardHeader>
 
-      <CardContent className="space-y-3">
-        {/* Affichage de la statistique via le renderer générique */}
-        {cardStatConfig && cardStatConfig.type && (
-          <CardStatRenderer app={app} config={cardStatConfig} />
-        )}
+      <CardContent className="flex flex-1 flex-col space-y-3">
+        {/* Contenu principal qui peut s'étirer */}
+        <div className="flex-1">
+          {/* Affichage de la statistique via le renderer générique */}
+          {cardStatConfig && cardStatConfig.type && (
+            <CardStatRenderer app={app} config={cardStatConfig} />
+          )}
 
-        {/* Compatibilité avec l'ancien système (si pas de cardStat configuré mais statLabel présent) */}
-        {!cardStatConfig && app.statLabel && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-sm text-muted-foreground">{app.statLabel}:</span>
-            <span className="text-lg font-semibold">{app.statValue ?? 'N/A'}</span>
-          </div>
-        )}
+          {/* Compatibilité avec l'ancien système (si pas de cardStat configuré mais statLabel présent) */}
+          {!cardStatConfig && app.statLabel && (
+            <div className="flex items-baseline gap-2">
+              <span className="text-sm text-muted-foreground">{app.statLabel}:</span>
+              <span className="text-lg font-semibold">{app.statValue ?? 'N/A'}</span>
+            </div>
+          )}
+        </div>
 
-        {/* Boutons d'action */}
-        <div className="flex gap-2">
+        {/* Boutons d'action - toujours en bas */}
+        <div className="flex gap-2 mt-auto">
           {/* Bouton pour ouvrir l'application */}
           <Button
             variant="default"

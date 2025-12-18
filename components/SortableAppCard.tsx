@@ -80,7 +80,7 @@ export function SortableAppCard({ app, onEdit, onDelete, showActions, isDragging
   }
 
   return (
-    <div className="relative">
+    <div className="relative h-full">
       {/* Barre d'actions au-dessus de la card - cachée pendant le drag */}
       {showActions && !isDragging && (
         <div 
@@ -119,7 +119,7 @@ export function SortableAppCard({ app, onEdit, onDelete, showActions, isDragging
         style={style}
         {...attributes}
         {...listeners}
-        className={isDragging ? 'cursor-grabbing' : 'cursor-grab'}
+        className={`h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
         <AppCard
           app={app}
