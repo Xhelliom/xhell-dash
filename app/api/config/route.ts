@@ -79,6 +79,26 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Valider que stylePreset est valide si fourni
+    if (updatedConfig.stylePreset) {
+      const validRadius = ['small', 'medium', 'large']
+      const validShadow = ['subtle', 'pronounced']
+      const validFont = ['sans', 'serif', 'mono']
+      const validDensity = ['compact', 'normal', 'comfortable']
+
+      if (
+        !validRadius.includes(updatedConfig.stylePreset.radius) ||
+        !validShadow.includes(updatedConfig.stylePreset.shadow) ||
+        !validFont.includes(updatedConfig.stylePreset.font) ||
+        !validDensity.includes(updatedConfig.stylePreset.density)
+      ) {
+        return NextResponse.json(
+          { error: 'Preset de style invalide' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Sauvegarder la configuration
     await writeConfig(updatedConfig)
 

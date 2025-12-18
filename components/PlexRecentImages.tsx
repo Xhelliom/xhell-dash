@@ -43,8 +43,8 @@ export function PlexRecentImages({ appId }: PlexRecentImagesProps) {
 
     fetchRecentMedia()
 
-    // Rafraîchir toutes les 30 secondes
-    const interval = setInterval(fetchRecentMedia, 30000)
+    // Rafraîchir toutes les 10 minutes (600000 ms) pour éviter les artefacts visuels
+    const interval = setInterval(fetchRecentMedia, 600000)
     return () => clearInterval(interval)
   }, [appId])
 
@@ -54,7 +54,7 @@ export function PlexRecentImages({ appId }: PlexRecentImagesProps) {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-16 w-12 animate-pulse rounded bg-muted"
+            className="h-16 w-12 animate-pulse rounded-[2px] bg-muted"
           />
         ))}
       </div>
@@ -70,7 +70,7 @@ export function PlexRecentImages({ appId }: PlexRecentImagesProps) {
       {recentMedia.map((media, index) => (
         <div
           key={`${media.ratingKey}-${index}`}
-          className="relative h-16 w-12 overflow-hidden rounded border"
+          className="relative h-16 w-12 overflow-hidden rounded-[2px] border"
         >
           <img
             src={media.thumb}

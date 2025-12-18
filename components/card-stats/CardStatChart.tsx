@@ -53,8 +53,8 @@ export function CardStatChart({ app, config }: CardStatChartProps) {
 
     fetchStats()
 
-    // Rafraîchir toutes les 30 secondes
-    const interval = setInterval(fetchStats, 30000)
+    // Rafraîchir toutes les 10 minutes (600000 ms) pour éviter les artefacts visuels
+    const interval = setInterval(fetchStats, 600000)
     return () => clearInterval(interval)
   }, [app.id, config.key])
 

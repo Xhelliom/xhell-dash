@@ -20,6 +20,7 @@ export function applyTheme(theme: ColorTheme): void {
   }
 
   const root = document.documentElement
+  const isDarkMode = root.classList.contains('dark')
 
   // Appliquer les variables CSS pour le mode light (:root)
   Object.entries(theme.light).forEach(([property, value]) => {
@@ -36,12 +37,19 @@ export function applyTheme(theme: ColorTheme): void {
     document.head.appendChild(darkStyleElement)
   }
 
-  // Construire le CSS pour .dark
+  // Construire le CSS pour .dark avec une spécificité plus élevée
   const darkStyles = Object.entries(theme.dark)
-    .map(([property, value]) => `  ${property}: ${value};`)
+    .map(([property, value]) => `  ${property}: ${value} !important;`)
     .join('\n')
 
   darkStyleElement.textContent = `.dark {\n${darkStyles}\n}`
+
+  // Si on est déjà en mode dark, appliquer aussi directement sur :root pour garantir l'application
+  if (isDarkMode) {
+    Object.entries(theme.dark).forEach(([property, value]) => {
+      root.style.setProperty(property, value)
+    })
+  }
 }
 
 /**

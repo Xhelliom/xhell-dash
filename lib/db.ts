@@ -8,6 +8,7 @@
 import { promises as fs } from 'fs'
 import path from 'path'
 import type { App, Widget, AppConfig } from './types'
+import { defaultStylePreset } from './style-presets'
 
 // Chemin vers le fichier de données
 const DATA_DIR = path.join(process.cwd(), 'data')
@@ -203,6 +204,7 @@ export async function readConfig(): Promise<AppConfig> {
     return {
       backgroundEffect: config.backgroundEffect || 'mesh-animated',
       theme: config.theme || 'default',
+      stylePreset: config.stylePreset || defaultStylePreset,
     }
   } catch (error: any) {
     // Si le fichier n'existe pas, retourner la configuration par défaut
@@ -210,6 +212,7 @@ export async function readConfig(): Promise<AppConfig> {
       return {
         backgroundEffect: 'mesh-animated',
         theme: 'default',
+        stylePreset: defaultStylePreset,
       }
     }
     

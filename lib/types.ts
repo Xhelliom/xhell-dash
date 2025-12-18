@@ -4,6 +4,18 @@
  * Ce fichier définit les interfaces et types utilisés dans toute l'application
  */
 
+// Import des types de style pour les ré-exporter
+import type {
+  StylePreset,
+  RadiusPreset,
+  ShadowPreset,
+  FontPreset,
+  DensityPreset,
+} from './style-presets'
+
+// Ré-exporter les types pour faciliter l'importation
+export type { RadiusPreset, ShadowPreset, FontPreset, DensityPreset, StylePreset }
+
 /**
  * Type de logo pour une application
  * - 'icon' : utilise une icône Lucide React
@@ -261,6 +273,7 @@ export type BackgroundEffect =
  */
 export type ThemeId = 'default' | 'violet' | 'caramel'
 
+
 /**
  * Configuration globale de l'application
  */
@@ -269,5 +282,7 @@ export interface AppConfig {
   backgroundEffect: BackgroundEffect
   // Thème de couleur sélectionné (optionnel, 'default' par défaut)
   theme?: ThemeId
+  // Preset de style (optionnel)
+  stylePreset?: StylePreset
 }
 

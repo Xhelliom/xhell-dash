@@ -37,6 +37,7 @@ import { Background } from '@/components/Background'
 import type { Widget, BackgroundEffect, AppConfig, ThemeId } from '@/lib/types'
 import { applyTheme, resetTheme } from '@/lib/theme-utils'
 import { getThemeById } from '@/lib/themes'
+import { useTheme } from 'next-themes'
 import {
   Sheet,
   SheetContent,
@@ -67,6 +68,7 @@ export default function Home() {
     useState<BackgroundEffect>('mesh-animated')
   const [theme, setTheme] = useState<ThemeId>('default')
   const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false)
+  const { resolvedTheme } = useTheme()
   const [configTab, setConfigTab] = useState<string>('settings')
   const [isSavingConfig, setIsSavingConfig] = useState(false)
   const saveConfigRef = useRef<(() => Promise<void>) | null>(null)
@@ -119,6 +121,21 @@ export default function Home() {
   }
 
   /**
+   * Applique le thème de couleur sélectionné
+   * Utilisé lors du chargement et quand le mode dark/light change
+   */
+  const applyColorTheme = (themeId: ThemeId) => {
+    if (themeId === 'default') {
+      resetTheme()
+    } else {
+      const themeToApply = getThemeById(themeId)
+      if (themeToApply) {
+        applyTheme(themeToApply)
+      }
+    }
+  }
+
+  /**
    * Charge la configuration depuis l'API
    */
   const loadConfig = async () => {
@@ -128,19 +145,16 @@ export default function Home() {
         const config: AppConfig = await response.json()
         setBackgroundEffect(config.backgroundEffect || 'mesh-animated')
         
-        // Appliquer le thème
+        // Appliquer le thème de couleur
         const newTheme = config.theme || 'default'
         setTheme(newTheme)
+        applyColorTheme(newTheme)
         
-        // Si le thème est 'default', réinitialiser les styles personnalisés
-        // Sinon, appliquer le thème sélectionné
-        if (newTheme === 'default') {
-          resetTheme()
+        // Appliquer le preset de style
+        if (config.stylePreset) {
+          applyStylePreset(config.stylePreset)
         } else {
-          const themeToApply = getThemeById(newTheme)
-          if (themeToApply) {
-            applyTheme(themeToApply)
-          }
+          resetStyle()
         }
       } else {
         console.error('Erreur lors du chargement de la configuration')
@@ -149,6 +163,17 @@ export default function Home() {
       console.error('Erreur lors du chargement de la configuration:', error)
     }
   }
+
+  // Réappliquer le thème quand le mode dark/light change
+  useEffect(() => {
+    if (resolvedTheme) {
+      // Petit délai pour laisser next-themes appliquer la classe .dark
+      const timeout = setTimeout(() => {
+        applyColorTheme(theme)
+      }, 100)
+      return () => clearTimeout(timeout)
+    }
+  }, [resolvedTheme, theme])
 
   /**
    * Gère le début du drag & drop pour les apps
@@ -550,7 +575,7 @@ export default function Home() {
             onDragEnd={handleWidgetDragEnd}
           >
             <SortableContext items={widgetIds}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-8" style={{ gap: 'var(--gap-widgets, 1rem)' }}>
                 {widgets.map((widget) => (
                   <SortableWidgetContainer
                     key={widget.id}
@@ -602,7 +627,7 @@ export default function Home() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={appIds}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" style={{ gap: 'var(--gap-cards, 1.5rem)' }}>
                 {apps.map((app) =>
                   isEditMode ? (
                     <SortableAppCard
