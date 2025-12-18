@@ -202,12 +202,14 @@ export async function readConfig(): Promise<AppConfig> {
     // Retourner la configuration avec valeurs par défaut si certains champs manquent
     return {
       backgroundEffect: config.backgroundEffect || 'mesh-animated',
+      theme: config.theme || 'default',
     }
   } catch (error: any) {
     // Si le fichier n'existe pas, retourner la configuration par défaut
     if (error.code === 'ENOENT') {
       return {
         backgroundEffect: 'mesh-animated',
+        theme: 'default',
       }
     }
     

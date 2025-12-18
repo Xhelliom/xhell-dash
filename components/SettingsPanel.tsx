@@ -9,10 +9,11 @@
 
 import { useState, useEffect } from 'react'
 import { BackgroundSelector } from '@/components/BackgroundSelector'
+import { ThemeSelector } from '@/components/ThemeSelector'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import type { BackgroundEffect, AppConfig } from '@/lib/types'
+import type { BackgroundEffect, AppConfig, ThemeId } from '@/lib/types'
 import { Loader2 } from 'lucide-react'
 
 interface SettingsPanelProps {
@@ -20,14 +21,19 @@ interface SettingsPanelProps {
    * Callback appelé quand la configuration change
    */
   onConfigChange?: () => void
+  /**
+   * Référence pour exposer la fonction de sauvegarde
+   */
+  onSaveRef?: (saveFn: () => Promise<void>) => void
 }
 
 /**
  * Panneau de paramètres généraux
  */
-export function SettingsPanel({ onConfigChange }: SettingsPanelProps) {
+export function SettingsPanel({ onConfigChange, onSaveRef }: SettingsPanelProps) {
   const [backgroundEffect, setBackgroundEffect] =
     useState<BackgroundEffect>('mesh-animated')
+  const [theme, setTheme] = useState<ThemeId>('default')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -41,6 +47,7 @@ export function SettingsPanel({ onConfigChange }: SettingsPanelProps) {
       if (response.ok) {
         const config: AppConfig = await response.json()
         setBackgroundEffect(config.backgroundEffect || 'mesh-animated')
+        setTheme(config.theme || 'default')
       } else {
         console.error('Erreur lors du chargement de la configuration')
       }
@@ -64,16 +71,17 @@ export function SettingsPanel({ onConfigChange }: SettingsPanelProps) {
         },
         body: JSON.stringify({
           backgroundEffect,
+          theme,
         }),
       })
 
       if (response.ok) {
-        // Notifier le parent que la configuration a changé
-        if (onConfigChange) {
-          onConfigChange()
-        }
-        // Recharger la page pour appliquer le nouveau background
-        window.location.reload()
+        // Notifier le parent que la configuration a changé.
+        // IMPORTANT:
+        // On n'utilise PAS `window.location.reload()` ici car ça force un refresh complet,
+        // ce qui donne l'impression que l'app "redémarre" après la fermeture du Sheet.
+        // Le parent (`app/page.tsx`) sait déjà recharger/appliquer la config via `onConfigChange()`.
+        if (onConfigChange) onConfigChange()
       } else {
         console.error('Erreur lors de la sauvegarde de la configuration')
         alert('Erreur lors de la sauvegarde de la configuration')
@@ -90,6 +98,13 @@ export function SettingsPanel({ onConfigChange }: SettingsPanelProps) {
   useEffect(() => {
     loadConfig()
   }, [])
+
+  // Exposer la fonction de sauvegarde au parent
+  useEffect(() => {
+    if (onSaveRef) {
+      onSaveRef(saveConfig)
+    }
+  }, [onSaveRef, backgroundEffect, theme])
 
   if (isLoading) {
     return (
@@ -110,6 +125,16 @@ export function SettingsPanel({ onConfigChange }: SettingsPanelProps) {
 
       <Separator />
 
+      {/* Sélecteur de thème de couleur */}
+      <div className="space-y-4">
+        <ThemeSelector
+          value={theme}
+          onValueChange={setTheme}
+        />
+      </div>
+
+      <Separator />
+
       {/* Sélecteur de background */}
       <div className="space-y-4">
         <BackgroundSelector
@@ -120,18 +145,9 @@ export function SettingsPanel({ onConfigChange }: SettingsPanelProps) {
 
       <Separator />
 
-      {/* Bouton de sauvegarde */}
-      <div className="flex justify-end">
-        <Button onClick={saveConfig} disabled={isSaving}>
-          {isSaving ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Sauvegarde...
-            </>
-          ) : (
-            'Sauvegarder les paramètres'
-          )}
-        </Button>
+      {/* Note : Le bouton de sauvegarde est maintenant disponible via le bouton flottant */}
+      <div className="text-sm text-muted-foreground text-center py-2">
+        Utilisez le bouton "Sauvegarder" en bas à gauche pour enregistrer vos modifications
       </div>
     </div>
   )

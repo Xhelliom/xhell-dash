@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -34,7 +34,9 @@ import { WidgetContainer } from '@/components/widgets/WidgetContainer'
 import { WidgetForm } from '@/components/widgets/WidgetForm'
 import { SortableWidgetContainer } from '@/components/widgets/SortableWidgetContainer'
 import { Background } from '@/components/Background'
-import type { Widget, BackgroundEffect, AppConfig } from '@/lib/types'
+import type { Widget, BackgroundEffect, AppConfig, ThemeId } from '@/lib/types'
+import { applyTheme, resetTheme } from '@/lib/theme-utils'
+import { getThemeById } from '@/lib/themes'
 import {
   Sheet,
   SheetContent,
@@ -46,6 +48,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus } from 'lucide-react'
 import type { App, CreateAppInput } from '@/lib/types'
 import { SettingsPanel } from '@/components/SettingsPanel'
+import { cn } from '@/lib/utils'
 
 export default function Home() {
   const [apps, setApps] = useState<App[]>([])
@@ -62,8 +65,12 @@ export default function Home() {
   const [isDraggingWidget, setIsDraggingWidget] = useState(false)
   const [backgroundEffect, setBackgroundEffect] =
     useState<BackgroundEffect>('mesh-animated')
+  const [theme, setTheme] = useState<ThemeId>('default')
   const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false)
   const [configTab, setConfigTab] = useState<string>('settings')
+  const [isSavingConfig, setIsSavingConfig] = useState(false)
+  const saveConfigRef = useRef<(() => Promise<void>) | null>(null)
+  const justSavedRef = useRef(false) // Flag pour éviter la réouverture immédiate après sauvegarde
 
   // Configuration des capteurs pour le drag & drop
   const sensors = useSensors(
@@ -120,6 +127,21 @@ export default function Home() {
       if (response.ok) {
         const config: AppConfig = await response.json()
         setBackgroundEffect(config.backgroundEffect || 'mesh-animated')
+        
+        // Appliquer le thème
+        const newTheme = config.theme || 'default'
+        setTheme(newTheme)
+        
+        // Si le thème est 'default', réinitialiser les styles personnalisés
+        // Sinon, appliquer le thème sélectionné
+        if (newTheme === 'default') {
+          resetTheme()
+        } else {
+          const themeToApply = getThemeById(newTheme)
+          if (themeToApply) {
+            applyTheme(themeToApply)
+          }
+        }
       } else {
         console.error('Erreur lors du chargement de la configuration')
       }
@@ -430,8 +452,13 @@ export default function Home() {
 
   /**
    * Gère l'ouverture du panneau de configuration
+   * Empêche la réouverture immédiate après une sauvegarde
    */
   const handleOpenConfigPanel = (tab: string = 'settings') => {
+    // Ne pas rouvrir si on vient juste de sauvegarder
+    if (justSavedRef.current) {
+      return
+    }
     setConfigTab(tab)
     setIsConfigPanelOpen(true)
   }
@@ -444,10 +471,66 @@ export default function Home() {
   }
 
   /**
+   * Gère les changements d'état du drawer de configuration
+   * Empêche la réouverture immédiate après une sauvegarde
+   */
+  const handleConfigPanelOpenChange = (open: boolean) => {
+    // Si on essaie d'ouvrir et qu'on vient juste de sauvegarder, ignorer complètement
+    if (open && justSavedRef.current) {
+      console.log('Tentative d\'ouverture bloquée - sauvegarde récente')
+      return
+    }
+    setIsConfigPanelOpen(open)
+    // Si on ferme le drawer, réinitialiser le flag après un délai plus long
+    if (!open) {
+      setTimeout(() => {
+        justSavedRef.current = false
+      }, 2000)
+    }
+  }
+
+  /**
    * Recharge la configuration après modification
    */
   const handleConfigChange = () => {
     loadConfig()
+  }
+
+  /**
+   * Gère la sauvegarde de la configuration
+   * Appelle la fonction de sauvegarde exposée par SettingsPanel
+   * Ferme le drawer après une sauvegarde réussie
+   */
+  const handleSaveConfig = async () => {
+    if (saveConfigRef.current) {
+      setIsSavingConfig(true)
+      justSavedRef.current = true // Marquer qu'on vient de sauvegarder
+      try {
+        await saveConfigRef.current()
+        // Fermer le drawer après une sauvegarde réussie
+        // Utiliser un petit délai pour s'assurer que la sauvegarde est terminée
+        setTimeout(() => {
+          setIsConfigPanelOpen(false)
+        }, 100)
+        // Réinitialiser le flag après un délai plus long pour éviter la réouverture accidentelle
+        setTimeout(() => {
+          justSavedRef.current = false
+        }, 1000)
+      } catch (error) {
+        // En cas d'erreur, on ne ferme pas le drawer pour que l'utilisateur puisse réessayer
+        justSavedRef.current = false
+        console.error('Erreur lors de la sauvegarde:', error)
+      } finally {
+        setIsSavingConfig(false)
+      }
+    }
+  }
+
+  /**
+   * Callback pour recevoir la fonction de sauvegarde depuis SettingsPanel
+   */
+  const handleSaveRef = (saveFn: () => Promise<void>) => {
+    saveConfigRef.current = saveFn
   }
 
   // IDs des apps et widgets pour le SortableContext
@@ -560,14 +643,40 @@ export default function Home() {
       </main>
 
       {/* Boutons flottants de configuration */}
-      <div className="fixed bottom-6 right-6 z-[100] flex flex-col-reverse items-end gap-3">
-        {/* Bouton de configuration principal (toggle mode édition) */}
-        <FloatingConfigButton isEditMode={isEditMode} />
+      {/* Bouton Background à gauche (visible uniquement en mode édition) */}
+      {/* Se transforme en bouton "Sauvegarder" quand le drawer est ouvert sur l'onglet settings */}
+      {/* Se décale à côté du drawer quand il est ouvert pour éviter le chevauchement */}
+      {isEditMode && (
+        <div 
+          className={cn(
+            "fixed bottom-6 z-[101] transition-all duration-300 ease-in-out",
+            // Position normale : en bas à gauche
+            // Quand le drawer est ouvert : 
+            // - Sur mobile : reste en bas à gauche (drawer prend toute la largeur mais le bouton reste cliquable au-dessus)
+            // - Sur desktop : se décale à droite du drawer pour éviter le chevauchement
+            isConfigPanelOpen
+              ? "left-6 sm:left-[calc(32rem+1.5rem)]" // Sur mobile reste à gauche, sur desktop se décale à droite du drawer (32rem = max-w-lg)
+              : "left-6"
+          )}
+          style={{ pointerEvents: 'auto' }}
+        >
+          <BackgroundConfigButton 
+            onClick={() => {
+              // Ne pas ouvrir si on vient juste de sauvegarder
+              if (!justSavedRef.current) {
+                handleOpenConfigPanel('settings')
+              }
+            }}
+            isSaveMode={isConfigPanelOpen && configTab === 'settings'}
+            onSave={handleSaveConfig}
+            isSaving={isSavingConfig}
+          />
+        </div>
+      )}
 
-        {/* Bouton Background (visible uniquement en mode édition) */}
-        {isEditMode && (
-          <BackgroundConfigButton onClick={() => handleOpenConfigPanel('settings')} />
-        )}
+      {/* Boutons de configuration et thème à droite */}
+      <div className="fixed bottom-6 right-6 z-[100]">
+        <FloatingConfigButton isEditMode={isEditMode} />
       </div>
 
       {/* Sheet avec AppForm pour ajouter/éditer */}
@@ -622,8 +731,8 @@ export default function Home() {
       </Sheet>
 
       {/* Panneau de configuration avec onglets */}
-      <Sheet open={isConfigPanelOpen} onOpenChange={setIsConfigPanelOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-lg overflow-hidden p-0 flex flex-col">
+      <Sheet open={isConfigPanelOpen} onOpenChange={handleConfigPanelOpenChange}>
+        <SheetContent side="left" className="w-full sm:max-w-lg overflow-hidden p-0 flex flex-col">
           <SheetHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
             <SheetTitle>Configuration</SheetTitle>
             <SheetDescription>
@@ -638,7 +747,10 @@ export default function Home() {
                 <TabsTrigger value="widgets">Widgets</TabsTrigger>
               </TabsList>
               <TabsContent value="settings" className="mt-4">
-                <SettingsPanel onConfigChange={handleConfigChange} />
+                <SettingsPanel 
+                  onConfigChange={handleConfigChange} 
+                  onSaveRef={handleSaveRef}
+                />
               </TabsContent>
               <TabsContent value="apps" className="mt-4">
                 <div className="space-y-4">

@@ -70,6 +70,15 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Valider que theme est valide si fourni
+    const validThemes = ['default', 'violet', 'caramel']
+    if (updatedConfig.theme && !validThemes.includes(updatedConfig.theme)) {
+      return NextResponse.json(
+        { error: 'Thème invalide' },
+        { status: 400 }
+      )
+    }
+
     // Sauvegarder la configuration
     await writeConfig(updatedConfig)
 

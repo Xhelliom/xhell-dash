@@ -42,7 +42,7 @@ export function ThemeToggle() {
             type="single"
             value={theme || 'system'}
             onValueChange={handleThemeChange}
-            className="gap-0"
+            className="gap-0 cursor-pointer"
             size="sm"
             variant="outline"
         >

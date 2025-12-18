@@ -49,6 +49,7 @@ export function FloatingConfigButton({ className, isEditMode = false }: Floating
                     'transition-[width,padding] duration-300 ease-in-out',
                     'flex items-center',
                     'overflow-hidden',
+                    'cursor-pointer',
                     // Centrer quand replié, aligner à gauche quand agrandi
                     isHovered ? 'justify-start px-4' : 'justify-center px-0',
                     // Largeur qui s'anime depuis le centre

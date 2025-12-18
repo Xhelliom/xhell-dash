@@ -256,10 +256,18 @@ export type BackgroundEffect =
   | 'shimmer'
 
 /**
+ * Identifiant de thème de couleur prédéfini
+ * 'default' signifie utiliser le thème par défaut (celui défini dans globals.css)
+ */
+export type ThemeId = 'default' | 'violet' | 'caramel'
+
+/**
  * Configuration globale de l'application
  */
 export interface AppConfig {
   // Effet de background sélectionné
   backgroundEffect: BackgroundEffect
+  // Thème de couleur sélectionné (optionnel, 'default' par défaut)
+  theme?: ThemeId
 }
 
