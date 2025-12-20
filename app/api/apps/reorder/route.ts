@@ -10,14 +10,35 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/auth'
 import { readApps, writeApps } from '@/lib/db'
 
 /**
  * PATCH /api/apps/reorder
- * Met à jour l'ordre des applications selon le tableau d'IDs fourni
+ * Met à jour l'ordre des applications selon le tableau d'IDs fourni (admin seulement)
  */
 export async function PATCH(request: NextRequest) {
   try {
+    // Vérifier l'authentification et le rôle admin
+    const session = await auth()
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    // @ts-expect-error - champ custom role
+    const userRole = session.user.role as string | undefined
+
+    if (userRole !== 'admin') {
+      return NextResponse.json(
+        { error: 'Accès refusé. Administrateur requis.' },
+        { status: 403 }
+      )
+    }
+
     // Récupérer les données du body
     const body = await request.json()
     

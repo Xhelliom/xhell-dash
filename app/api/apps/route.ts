@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/auth'
 import { readApps, writeApps, generateAppId } from '@/lib/db'
 import type { App, CreateAppInput } from '@/lib/types'
 
@@ -28,7 +29,7 @@ export async function GET() {
 
 /**
  * POST /api/apps
- * Crée une nouvelle application
+ * Crée une nouvelle application (admin seulement)
  * 
  * Body attendu :
  * {
@@ -42,6 +43,26 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Vérifier l'authentification et le rôle admin
+    const session = await auth()
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    // @ts-expect-error - champ custom role
+    const userRole = session.user.role as string | undefined
+
+    if (userRole !== 'admin') {
+      return NextResponse.json(
+        { error: 'Accès refusé. Administrateur requis.' },
+        { status: 403 }
+      )
+    }
+
     // Récupérer les données du body
     const body: CreateAppInput = await request.json()
     

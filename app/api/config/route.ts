@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/auth'
 import { readConfig, writeConfig } from '@/lib/db'
 import type { AppConfig } from '@/lib/types'
 
@@ -29,10 +30,30 @@ export async function GET() {
 
 /**
  * PUT /api/config
- * Met à jour la configuration de l'application
+ * Met à jour la configuration de l'application (admin seulement)
  */
 export async function PUT(request: NextRequest) {
   try {
+    // Vérifier l'authentification et le rôle admin
+    const session = await auth()
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    // @ts-expect-error - champ custom role
+    const userRole = session.user.role as string | undefined
+
+    if (userRole !== 'admin') {
+      return NextResponse.json(
+        { error: 'Accès refusé. Administrateur requis.' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const config = body as Partial<AppConfig>
 

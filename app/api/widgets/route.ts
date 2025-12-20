@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/auth'
 import { readWidgets, writeWidgets, generateWidgetId } from '@/lib/db'
 import type { Widget, WidgetType } from '@/lib/types'
 
@@ -28,10 +29,30 @@ export async function GET() {
 
 /**
  * POST /api/widgets
- * Crée un nouveau widget
+ * Crée un nouveau widget (admin seulement)
  */
 export async function POST(request: NextRequest) {
   try {
+    // Vérifier l'authentification et le rôle admin
+    const session = await auth()
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    // @ts-expect-error - champ custom role
+    const userRole = session.user.role as string | undefined
+
+    if (userRole !== 'admin') {
+      return NextResponse.json(
+        { error: 'Accès refusé. Administrateur requis.' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     
     // Valider les champs requis

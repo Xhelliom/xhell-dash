@@ -50,6 +50,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus } from 'lucide-react'
 import type { App, CreateAppInput } from '@/lib/types'
 import { SettingsPanel } from '@/components/SettingsPanel'
+import { UserManagementPanel } from '@/components/UserManagementPanel'
+import { UserAvatarButton } from '@/components/UserAvatarButton'
+import { ProfileDialog } from '@/components/ProfileDialog'
 import { cn } from '@/lib/utils'
 
 export default function Home() {
@@ -74,6 +77,8 @@ export default function Home() {
   const [isSavingConfig, setIsSavingConfig] = useState(false)
   const saveConfigRef = useRef<(() => Promise<void>) | null>(null)
   const justSavedRef = useRef(false) // Flag pour éviter la réouverture immédiate après sauvegarde
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
 
   // Configuration des capteurs pour le drag & drop
   const sensors = useSensors(
@@ -455,17 +460,43 @@ export default function Home() {
     }
   }
 
-  // Charger les apps, widgets et configuration au montage du composant
+  /**
+   * Charge le rôle de l'utilisateur depuis la session
+   */
+  const loadUserRole = async () => {
+    try {
+      const response = await fetch('/api/auth/session')
+      if (response.ok) {
+        const data = await response.json()
+        // @ts-expect-error - champ custom role
+        setUserRole(data?.user?.role || null)
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement du rôle utilisateur:', error)
+    }
+  }
+
+  // Charger les apps, widgets, configuration et rôle utilisateur au montage du composant
   useEffect(() => {
     loadApps()
     loadWidgets()
     loadConfig()
+    loadUserRole()
   }, [])
 
-  // Toggle du mode édition depuis le bouton flottant
+  // Vérifier si l'utilisateur est admin
+  const isAdmin = userRole === 'admin'
+
+  // Toggle du mode édition depuis le bouton flottant (admin seulement)
   useEffect(() => {
     const handleEditModeToggle = () => {
-      setIsEditMode((prev) => !prev)
+      // Ne permettre le mode édition que pour les admins
+      if (isAdmin) {
+        setIsEditMode((prev) => !prev)
+      } else {
+        // Si un non-admin essaie d'activer le mode édition, le désactiver
+        setIsEditMode(false)
+      }
     }
 
     // Écouter l'événement personnalisé pour toggle le mode édition
@@ -474,7 +505,14 @@ export default function Home() {
     return () => {
       window.removeEventListener('toggleEditMode', handleEditModeToggle)
     }
-  }, [])
+  }, [isAdmin])
+
+  // Désactiver le mode édition si l'utilisateur n'est plus admin
+  useEffect(() => {
+    if (!isAdmin) {
+      setIsEditMode(false)
+    }
+  }, [isAdmin])
 
   /**
    * Gère l'ouverture du panneau de configuration
@@ -567,8 +605,8 @@ export default function Home() {
     <Background effect={backgroundEffect}>
       {/* Contenu principal */}
       <main className="container mx-auto px-4 py-8">
-        {/* Section des widgets avec drag & drop en mode édition */}
-        {isEditMode ? (
+        {/* Section des widgets avec drag & drop en mode édition (admin seulement) */}
+        {isEditMode && isAdmin ? (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -615,10 +653,12 @@ export default function Home() {
             <p className="text-lg text-muted-foreground mb-4">
               Aucune application configurée
             </p>
-            <Button onClick={handleAddApp}>
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter une application
-            </Button>
+            {isAdmin && (
+              <Button onClick={handleAddApp}>
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter une application
+              </Button>
+            )}
           </div>
         ) : (
           <DndContext
@@ -630,7 +670,7 @@ export default function Home() {
             <SortableContext items={appIds}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-stretch" style={{ gap: 'var(--gap-cards, 1.5rem)' }}>
                 {apps.map((app) =>
-                  isEditMode ? (
+                  isEditMode && isAdmin ? (
                     <SortableAppCard
                       key={app.id}
                       app={app}
@@ -643,8 +683,8 @@ export default function Home() {
                     <AppCard key={app.id} app={app} />
                   )
                 )}
-                {/* Bouton + pour ajouter une app en mode édition */}
-                {isEditMode && (
+                {/* Bouton + pour ajouter une app en mode édition (admin seulement) */}
+                {isEditMode && isAdmin && (
                   <div className="flex items-center justify-center min-h-[200px] border-2 border-dashed border-muted-foreground/25 rounded-lg hover:border-primary/50 transition-colors">
                     <Button
                       variant="outline"
@@ -669,10 +709,10 @@ export default function Home() {
       </main>
 
       {/* Boutons flottants de configuration */}
-      {/* Bouton Background à gauche (visible uniquement en mode édition) */}
+      {/* Bouton Background à gauche (visible uniquement en mode édition et pour les admins) */}
       {/* Se transforme en bouton "Sauvegarder" quand le drawer est ouvert sur l'onglet settings */}
       {/* Se décale à côté du drawer quand il est ouvert pour éviter le chevauchement */}
-      {isEditMode && (
+      {isEditMode && isAdmin && (
         <div
           className={cn(
             "fixed bottom-6 z-[101] transition-all duration-300 ease-in-out",
@@ -700,10 +740,21 @@ export default function Home() {
         </div>
       )}
 
-      {/* Boutons de configuration et thème à droite */}
-      <div className="fixed bottom-6 right-6 z-[100]">
-        <FloatingConfigButton isEditMode={isEditMode} />
-      </div>
+      {/* Bouton avatar en haut à droite */}
+      <UserAvatarButton onProfileClick={() => setIsProfileDialogOpen(true)} />
+
+      {/* Dialog de profil */}
+      <ProfileDialog
+        open={isProfileDialogOpen}
+        onOpenChange={setIsProfileDialogOpen}
+      />
+
+      {/* Boutons de configuration et thème à droite - visible uniquement pour les admins */}
+      {isAdmin && (
+        <div className="fixed bottom-6 right-6 z-[100]">
+          <FloatingConfigButton isEditMode={isEditMode} />
+        </div>
+      )}
 
       {/* Sheet avec AppForm pour ajouter/éditer */}
       <Sheet open={isAppFormOpen} onOpenChange={setIsAppFormOpen}>
@@ -756,22 +807,24 @@ export default function Home() {
         </SheetContent>
       </Sheet>
 
-      {/* Panneau de configuration avec onglets */}
-      <Sheet open={isConfigPanelOpen} onOpenChange={handleConfigPanelOpenChange}>
-        <SheetContent side="left" className="w-full sm:max-w-lg overflow-hidden p-0 flex flex-col">
-          <SheetHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
-            <SheetTitle>Configuration</SheetTitle>
-            <SheetDescription>
-              Gérez les applications, widgets et paramètres du dashboard
-            </SheetDescription>
-          </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-4">
-            <Tabs value={configTab} onValueChange={setConfigTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="settings">Paramètres</TabsTrigger>
-                <TabsTrigger value="apps">Applications</TabsTrigger>
-                <TabsTrigger value="widgets">Widgets</TabsTrigger>
-              </TabsList>
+      {/* Panneau de configuration avec onglets (admin seulement) */}
+      {isAdmin && (
+        <Sheet open={isConfigPanelOpen} onOpenChange={handleConfigPanelOpenChange}>
+          <SheetContent side="left" className="w-full sm:max-w-lg overflow-hidden p-0 flex flex-col">
+            <SheetHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
+              <SheetTitle>Configuration</SheetTitle>
+              <SheetDescription>
+                Gérez les applications, widgets, paramètres et utilisateurs du dashboard
+              </SheetDescription>
+            </SheetHeader>
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <Tabs value={configTab} onValueChange={setConfigTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="settings">Paramètres</TabsTrigger>
+                  <TabsTrigger value="apps">Applications</TabsTrigger>
+                  <TabsTrigger value="widgets">Widgets</TabsTrigger>
+                  <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+                </TabsList>
               <TabsContent value="settings" className="mt-4">
                 <SettingsPanel
                   onConfigChange={handleConfigChange}
@@ -882,10 +935,14 @@ export default function Home() {
                   )}
                 </div>
               </TabsContent>
+              <TabsContent value="users" className="mt-4">
+                <UserManagementPanel />
+              </TabsContent>
             </Tabs>
           </div>
         </SheetContent>
       </Sheet>
+      )}
     </Background>
   )
 }

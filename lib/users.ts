@@ -126,3 +126,175 @@ export async function isDefaultPasswordStillActive(): Promise<boolean> {
   return verifyPassword(defaultPassword, user)
 }
 
+/**
+ * Récupère tous les utilisateurs de la base de données.
+ * Cette fonction est réservée aux administrateurs.
+ * 
+ * @returns Liste de tous les utilisateurs (sans les hash de mots de passe)
+ */
+export async function getAllUsers(): Promise<Omit<StoredUser, 'passwordHash'>[]> {
+  const users = await prisma.user.findMany({
+    orderBy: {
+      createdAt: 'desc',
+    },
+  })
+
+  // Retourner les utilisateurs sans les hash de mots de passe pour la sécurité
+  return users.map(({ passwordHash, ...user }) => user)
+}
+
+/**
+ * Met à jour un utilisateur existant.
+ * Cette fonction est réservée aux administrateurs.
+ * 
+ * @param id - ID de l'utilisateur à modifier
+ * @param params - Paramètres à mettre à jour (email, password, role)
+ * @returns Utilisateur mis à jour (sans le hash de mot de passe)
+ */
+export async function updateUser(
+  id: string,
+  params: {
+    email?: string
+    password?: string
+    role?: UserRole
+  }
+): Promise<Omit<StoredUser, 'passwordHash'>> {
+  const updateData: any = {}
+
+  // Si un email est fourni, le normaliser
+  if (params.email !== undefined) {
+    updateData.email = params.email.toLowerCase()
+  }
+
+  // Si un mot de passe est fourni, le hasher
+  if (params.password !== undefined) {
+    updateData.passwordHash = await hashPassword(params.password)
+  }
+
+  // Si un rôle est fourni, l'ajouter
+  if (params.role !== undefined) {
+    updateData.role = params.role as Role
+  }
+
+  // Vérifier que l'utilisateur existe
+  const existingUser = await prisma.user.findUnique({
+    where: { id },
+  })
+
+  if (!existingUser) {
+    throw new Error("Utilisateur introuvable")
+  }
+
+  // Si l'email change, vérifier qu'il n'est pas déjà utilisé
+  if (params.email && params.email.toLowerCase() !== existingUser.email) {
+    const emailInUse = await prisma.user.findUnique({
+      where: { email: params.email.toLowerCase() },
+    })
+
+    if (emailInUse) {
+      throw new Error("Un utilisateur avec cet email existe déjà")
+    }
+  }
+
+  // Mettre à jour l'utilisateur
+  const updatedUser = await prisma.user.update({
+    where: { id },
+    data: updateData,
+  })
+
+  // Retourner sans le hash de mot de passe
+  const { passwordHash, ...userWithoutPassword } = updatedUser
+  return userWithoutPassword
+}
+
+/**
+ * Supprime un utilisateur de la base de données.
+ * Cette fonction est réservée aux administrateurs.
+ * 
+ * @param id - ID de l'utilisateur à supprimer
+ */
+export async function deleteUser(id: string): Promise<void> {
+  // Vérifier que l'utilisateur existe
+  const user = await prisma.user.findUnique({
+    where: { id },
+  })
+
+  if (!user) {
+    throw new Error("Utilisateur introuvable")
+  }
+
+  // Vérifier qu'il reste au moins un admin après la suppression
+  if (user.role === 'admin') {
+    const adminCount = await prisma.user.count({
+      where: { role: 'admin' },
+    })
+
+    if (adminCount <= 1) {
+      throw new Error("Impossible de supprimer le dernier administrateur")
+    }
+  }
+
+  // Supprimer l'utilisateur
+  await prisma.user.delete({
+    where: { id },
+  })
+}
+
+/**
+ * Met à jour le profil de l'utilisateur connecté.
+ * Permet de modifier l'email et/ou le mot de passe de son propre compte.
+ * 
+ * @param userId - ID de l'utilisateur connecté
+ * @param params - Paramètres à mettre à jour (email, password)
+ * @returns Utilisateur mis à jour (sans le hash de mot de passe)
+ */
+export async function updateUserProfile(
+  userId: string,
+  params: {
+    email?: string
+    password?: string
+  }
+): Promise<Omit<StoredUser, 'passwordHash'>> {
+  const updateData: any = {}
+
+  // Si un email est fourni, le normaliser
+  if (params.email !== undefined) {
+    updateData.email = params.email.toLowerCase()
+  }
+
+  // Si un mot de passe est fourni, le hasher
+  if (params.password !== undefined) {
+    updateData.passwordHash = await hashPassword(params.password)
+  }
+
+  // Vérifier que l'utilisateur existe
+  const existingUser = await prisma.user.findUnique({
+    where: { id: userId },
+  })
+
+  if (!existingUser) {
+    throw new Error("Utilisateur introuvable")
+  }
+
+  // Si l'email change, vérifier qu'il n'est pas déjà utilisé
+  if (params.email && params.email.toLowerCase() !== existingUser.email) {
+    const emailInUse = await prisma.user.findUnique({
+      where: { email: params.email.toLowerCase() },
+    })
+
+    if (emailInUse) {
+      throw new Error("Un utilisateur avec cet email existe déjà")
+    }
+  }
+
+  // Mettre à jour l'utilisateur
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: updateData,
+  })
+
+  // Retourner sans le hash de mot de passe
+  const { passwordHash, ...userWithoutPassword } = updatedUser
+  return userWithoutPassword
+}
+

@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/auth'
 import { readWidgets, writeWidgets } from '@/lib/db'
 import type { Widget } from '@/lib/types'
 
@@ -42,13 +43,33 @@ export async function GET(
 
 /**
  * PUT /api/widgets/[id]
- * Met à jour un widget
+ * Met à jour un widget (admin seulement)
  */
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Vérifier l'authentification et le rôle admin
+    const session = await auth()
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    // @ts-expect-error - champ custom role
+    const userRole = session.user.role as string | undefined
+
+    if (userRole !== 'admin') {
+      return NextResponse.json(
+        { error: 'Accès refusé. Administrateur requis.' },
+        { status: 403 }
+      )
+    }
+
     const { id } = await params
     const body = await request.json()
     
@@ -84,13 +105,33 @@ export async function PUT(
 
 /**
  * DELETE /api/widgets/[id]
- * Supprime un widget
+ * Supprime un widget (admin seulement)
  */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Vérifier l'authentification et le rôle admin
+    const session = await auth()
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    // @ts-expect-error - champ custom role
+    const userRole = session.user.role as string | undefined
+
+    if (userRole !== 'admin') {
+      return NextResponse.json(
+        { error: 'Accès refusé. Administrateur requis.' },
+        { status: 403 }
+      )
+    }
+
     const { id } = await params
     const widgets = await readWidgets()
     const filteredWidgets = widgets.filter(w => w.id !== id)
