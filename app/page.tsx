@@ -709,7 +709,7 @@ export default function Home() {
       </main>
 
       {/* Boutons flottants de configuration */}
-      {/* Bouton Background à gauche (visible uniquement en mode édition et pour les admins) */}
+      {/* Bouton Paramètres à gauche (visible uniquement en mode édition et pour les admins) */}
       {/* Se transforme en bouton "Sauvegarder" quand le drawer est ouvert sur l'onglet settings */}
       {/* Se décale à côté du drawer quand il est ouvert pour éviter le chevauchement */}
       {isEditMode && isAdmin && (
@@ -740,13 +740,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* Bouton avatar en haut à droite */}
-      <UserAvatarButton onProfileClick={() => setIsProfileDialogOpen(true)} />
-
-      {/* Dialog de profil */}
-      <ProfileDialog
-        open={isProfileDialogOpen}
-        onOpenChange={setIsProfileDialogOpen}
+      {/* Bouton avatar en haut à droite avec profil en popover */}
+      <UserAvatarButton 
+        onProfileClick={() => setIsProfileDialogOpen(true)}
+        isProfileDialogOpen={isProfileDialogOpen}
+        onProfileDialogChange={setIsProfileDialogOpen}
       />
 
       {/* Boutons de configuration et thème à droite - visible uniquement pour les admins */}

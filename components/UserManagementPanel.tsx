@@ -48,6 +48,7 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   // Champs du formulaire
   const [email, setEmail] = useState('')
@@ -77,9 +78,25 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
     }
   }
 
-  // Charger les utilisateurs au montage
+  /**
+   * Charge l'ID de l'utilisateur connecté
+   */
+  const loadCurrentUser = async () => {
+    try {
+      const response = await fetch('/api/users/profile')
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentUserId(data.id)
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de l\'utilisateur actuel:', error)
+    }
+  }
+
+  // Charger les utilisateurs et l'utilisateur actuel au montage
   useEffect(() => {
     loadUsers()
+    loadCurrentUser()
   }, [])
 
   /**
@@ -112,6 +129,13 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
    * Supprime un utilisateur
    */
   const handleDeleteUser = async (userId: string) => {
+    // Empêcher la suppression de son propre compte
+    if (userId === currentUserId) {
+      setError('Vous ne pouvez pas supprimer votre propre compte')
+      setTimeout(() => setError(null), 5000)
+      return
+    }
+
     if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
       return
     }
@@ -287,12 +311,17 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
               key={user.id}
               className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
             >
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium">{user.email}</p>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-medium break-all">{user.email}</p>
+                  {user.id === currentUserId && (
+                    <span className="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 shrink-0">
+                      Vous
+                    </span>
+                  )}
                   <span
                     className={cn(
-                      'px-2 py-1 text-xs rounded-full',
+                      'px-2 py-1 text-xs rounded-full shrink-0',
                       user.role === 'admin'
                         ? 'bg-primary/10 text-primary'
                         : 'bg-muted text-muted-foreground'
@@ -318,6 +347,8 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
                   variant="destructive"
                   size="sm"
                   onClick={() => handleDeleteUser(user.id)}
+                  disabled={user.id === currentUserId}
+                  title={user.id === currentUserId ? 'Vous ne pouvez pas supprimer votre propre compte' : 'Supprimer l\'utilisateur'}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Supprimer
@@ -361,6 +392,7 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="utilisateur@example.com"
                 required
+                className="break-all"
               />
             </div>
 
@@ -383,7 +415,11 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
             {/* Champ Rôle */}
             <div className="space-y-2">
               <Label htmlFor="user-role">Rôle</Label>
-              <Select value={role} onValueChange={(value) => setRole(value as 'user' | 'admin')}>
+              <Select 
+                value={role} 
+                onValueChange={(value) => setRole(value as 'user' | 'admin')}
+                disabled={editingUser?.id === currentUserId && editingUser?.role === 'admin'}
+              >
                 <SelectTrigger id="user-role">
                   <SelectValue />
                 </SelectTrigger>
@@ -392,6 +428,11 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
                   <SelectItem value="admin">Administrateur</SelectItem>
                 </SelectContent>
               </Select>
+              {editingUser?.id === currentUserId && editingUser?.role === 'admin' && (
+                <p className="text-xs text-muted-foreground">
+                  Vous ne pouvez pas modifier votre propre rôle d'administrateur
+                </p>
+              )}
             </div>
 
             {/* Boutons */}

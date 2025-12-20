@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { createAvatar } from '@dicebear/core'
 import { lorelei } from '@dicebear/collection'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,8 @@ import {
 import { User, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { signOut } from 'next-auth/react'
+import { ProfileDialog } from '@/components/ProfileDialog'
+import { PopoverAnchor } from '@/components/ui/popover'
 
 interface UserSession {
   user?: {
@@ -32,12 +34,19 @@ interface UserSession {
 
 interface UserAvatarButtonProps {
   onProfileClick?: () => void
+  isProfileDialogOpen?: boolean
+  onProfileDialogChange?: (open: boolean) => void
 }
 
-export function UserAvatarButton({ onProfileClick }: UserAvatarButtonProps) {
+export function UserAvatarButton({ 
+  onProfileClick, 
+  isProfileDialogOpen = false,
+  onProfileDialogChange 
+}: UserAvatarButtonProps) {
   const [session, setSession] = useState<UserSession | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const avatarButtonRef = useRef<HTMLButtonElement>(null)
 
   // Charger la session au montage
   useEffect(() => {
@@ -85,7 +94,9 @@ export function UserAvatarButton({ onProfileClick }: UserAvatarButtonProps) {
   // Gérer l'ouverture du profil
   const handleProfileClick = () => {
     setIsMenuOpen(false)
-    if (onProfileClick) {
+    if (onProfileDialogChange) {
+      onProfileDialogChange(true)
+    } else if (onProfileClick) {
       onProfileClick()
     }
   }
@@ -97,33 +108,67 @@ export function UserAvatarButton({ onProfileClick }: UserAvatarButtonProps) {
   const userEmail = session.user.email || ''
   const userName = session.user.name || userEmail.split('@')[0]
 
+  // Bouton avatar réutilisable
+  const avatarButton = (
+    <Button
+      ref={avatarButtonRef}
+      variant="ghost"
+      size="icon"
+      className={cn(
+        'h-12 w-12 rounded-full p-0 overflow-hidden',
+        'border-2 border-border hover:border-primary',
+        'transition-all duration-200',
+        'shadow-lg hover:shadow-xl'
+      )}
+      aria-label="Menu utilisateur"
+      onClick={(e) => {
+        // Si on veut ouvrir le menu Dialog au lieu du profil, décommenter cette ligne
+        // setIsMenuOpen(true)
+        // Sinon, ouvrir le profil en Popover
+        if (onProfileDialogChange) {
+          onProfileDialogChange(true)
+        }
+      }}
+    >
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={`Avatar de ${userName}`}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <div className="w-full h-full bg-muted flex items-center justify-center">
+          <User className="h-6 w-6 text-muted-foreground" />
+        </div>
+      )}
+    </Button>
+  )
+
   return (
     <div className="fixed top-6 right-6 z-[100]">
+      {/* ProfileDialog - s'ouvre comme une bulle reliée au bouton avatar */}
+      <ProfileDialog
+        open={isProfileDialogOpen || false}
+        onOpenChange={(open) => {
+          if (onProfileDialogChange) {
+            onProfileDialogChange(open)
+          }
+        }}
+      >
+        {/* Le bouton avatar est utilisé comme anchor pour positionner le Popover */}
+        {avatarButton}
+      </ProfileDialog>
+
+      {/* Menu Dialog - on utilise un bouton caché pour le trigger, le clic réel est géré par le ProfileDialog */}
       <Dialog open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <DialogTrigger asChild>
+          {/* Bouton invisible utilisé uniquement pour la structure du Dialog */}
           <Button
             variant="ghost"
             size="icon"
-            className={cn(
-              'h-12 w-12 rounded-full p-0 overflow-hidden',
-              'border-2 border-border hover:border-primary',
-              'transition-all duration-200',
-              'shadow-lg hover:shadow-xl'
-            )}
-            aria-label="Menu utilisateur"
-          >
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={`Avatar de ${userName}`}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-muted flex items-center justify-center">
-                <User className="h-6 w-6 text-muted-foreground" />
-              </div>
-            )}
-          </Button>
+            className="opacity-0 pointer-events-none absolute"
+            aria-hidden="true"
+          />
         </DialogTrigger>
         <DialogContent className="w-80 p-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b">
@@ -137,7 +182,7 @@ export function UserAvatarButton({ onProfileClick }: UserAvatarButtonProps) {
               )}
               <div className="flex flex-col">
                 <span className="text-base font-semibold">{userName}</span>
-                <span className="text-sm text-muted-foreground">{userEmail}</span>
+                <span className="text-sm text-muted-foreground break-all">{userEmail}</span>
               </div>
             </DialogTitle>
           </DialogHeader>

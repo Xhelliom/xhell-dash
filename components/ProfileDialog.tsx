@@ -1,8 +1,9 @@
 /**
  * Composant ProfileDialog
  * 
- * Dialog pour modifier son email et mot de passe
+ * Popover pour modifier son email et mot de passe
  * Formulaire avec validation et gestion des erreurs
+ * S'ouvre comme une bulle reliée au bouton déclencheur
  */
 
 'use client'
@@ -10,16 +11,15 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  PopoverAnchor,
+} from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Check, AlertCircle } from 'lucide-react'
+import { Loader2, Check, AlertCircle, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { signOut } from 'next-auth/react'
 
@@ -32,9 +32,10 @@ interface UserProfile {
 interface ProfileDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  children: React.ReactNode // Le bouton déclencheur
 }
 
-export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
+export function ProfileDialog({ open, onOpenChange, children }: ProfileDialogProps) {
   const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -223,21 +224,32 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Mon profil</DialogTitle>
-          <DialogDescription>
-            Modifiez votre email et/ou votre mot de passe
-          </DialogDescription>
-        </DialogHeader>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    <Popover open={open} onOpenChange={onOpenChange}>
+      {/* Utiliser PopoverAnchor pour positionner le Popover par rapport au bouton */}
+      <PopoverAnchor asChild>
+        {children}
+      </PopoverAnchor>
+      <PopoverContent 
+        className="w-96 max-h-[80vh] overflow-y-auto" 
+        align="end" 
+        side="bottom"
+        sideOffset={8}
+      >
+        <div className="space-y-4">
+          {/* En-tête */}
+          <div>
+            <h3 className="text-lg font-semibold">Mon profil</h3>
+            <p className="text-sm text-muted-foreground">
+              Modifiez votre email et/ou votre mot de passe
+            </p>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
             {/* Message d'erreur */}
             {error && (
               <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
@@ -276,6 +288,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                 }}
                 placeholder="votre@email.com"
                 required
+                className="break-all"
               />
             </div>
 
@@ -333,30 +346,44 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
             )}
 
             {/* Boutons */}
-            <div className="flex gap-2 justify-end pt-4">
+            <div className="flex flex-col gap-2 pt-4 border-t">
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isSaving}
+                >
+                  Annuler
+                </Button>
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Sauvegarde...
+                    </>
+                  ) : (
+                    'Sauvegarder'
+                  )}
+                </Button>
+              </div>
               <Button
                 type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSaving}
+                variant="ghost"
+                className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={async () => {
+                  await signOut({ redirect: true, callbackUrl: '/login' })
+                }}
               >
-                Annuler
-              </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Sauvegarde...
-                  </>
-                ) : (
-                  'Sauvegarder'
-                )}
+                <LogOut className="h-4 w-4" />
+                <span>Déconnexion</span>
               </Button>
             </div>
           </form>
-        )}
-      </DialogContent>
-    </Dialog>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 
