@@ -95,6 +95,14 @@ export interface CardDefinition {
   cardStatTypes?: string[]
 
   /**
+   * Clés de statistiques disponibles pour cette carte
+   * Utilisées pour le type 'number' et 'chart' dans le formulaire
+   * Format : [{ value: 'keyName', label: 'Libellé affiché' }]
+   * Si non défini, des clés génériques seront utilisées
+   */
+  availableStatKeys?: Array<{ value: string; label: string }>
+
+  /**
    * Types TypeScript exportés par cette carte
    * Permet d'étendre les types globaux si nécessaire
    */
@@ -161,10 +169,21 @@ class CardRegistry {
   /**
    * Récupère tous les templates de statistiques depuis les cartes
    * 
-   * @returns Tableau de tous les templates
+   * Le template "generic" est toujours placé en premier pour qu'il apparaisse
+   * comme première option dans les formulaires
+   * 
+   * @returns Tableau de tous les templates (generic en premier)
    */
   getTemplates(): StatsTemplate[] {
-    return this.getAll().map((card) => card.template)
+    const allTemplates = this.getAll().map((card) => card.template)
+    
+    // Trier pour mettre "generic" en premier
+    const genericTemplate = allTemplates.find((t) => t.id === 'generic')
+    const otherTemplates = allTemplates.filter((t) => t.id !== 'generic')
+    
+    return genericTemplate 
+      ? [genericTemplate, ...otherTemplates]
+      : allTemplates
   }
 
   /**
@@ -211,6 +230,35 @@ class CardRegistry {
   ): ComponentType<CardStatComponentProps> | undefined {
     const card = this.get(cardId)
     return card?.cardStatComponents?.[customType]
+  }
+
+  /**
+   * Récupère les clés de statistiques disponibles pour une carte
+   * 
+   * @param cardId - ID de la carte
+   * @returns Tableau des clés disponibles ou clés génériques par défaut
+   */
+  getAvailableStatKeys(cardId?: string): Array<{ value: string; label: string }> {
+    if (!cardId) {
+      // Clés génériques par défaut
+      return [
+        { value: 'value', label: 'Valeur' },
+        { value: 'count', label: 'Compte' },
+        { value: 'total', label: 'Total' },
+      ]
+    }
+
+    const card = this.get(cardId)
+    if (card?.availableStatKeys && card.availableStatKeys.length > 0) {
+      return card.availableStatKeys
+    }
+
+    // Clés génériques par défaut si la carte n'en définit pas
+    return [
+      { value: 'value', label: 'Valeur' },
+      { value: 'count', label: 'Compte' },
+      { value: 'total', label: 'Total' },
+    ]
   }
 
   /**

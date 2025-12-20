@@ -11,6 +11,8 @@
 
 // Importer toutes les cartes disponibles
 // Chaque import déclenche l'enregistrement automatique de la carte
+// IMPORTANT: Importer 'generic' en premier pour qu'elle apparaisse en premier dans la liste
+import './generic'
 import './plex'
 
 // Note: Les cartes s'enregistrent automatiquement lors de l'import

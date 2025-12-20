@@ -62,6 +62,8 @@ Dans chaque fichier, remplacez :
 
 #### `index.ts`
 - **IMPORTANT** : Changez l'ID de la carte pour correspondre au nom du dossier
+- **IMPORTANT** : Ne pas importer le handler API (`route.ts`) ici car il utilise `fs` (côté serveur uniquement)
+- Le handler API sera chargé dynamiquement par la route API
 - Adaptez le template selon vos besoins
 - Enregistrez tous vos composants dans `cardStatComponents` si nécessaire
 

@@ -13,7 +13,8 @@
 
 import { cardRegistry } from '@/lib/card-registry'
 import type { CardDefinition } from '@/lib/card-registry'
-import type { StatsTemplate, StatsDisplayOptions } from '@/lib/types'
+import type { StatsTemplate } from '@/lib/stats-templates'
+import type { StatsDisplayOptions } from '@/lib/types'
 import { TemplateStatsPanel } from './panel'
 import { TemplateRecentItems } from './card-stat'
 // Note: Le handler API n'est pas importé ici car il utilise fs (côté serveur uniquement)
@@ -33,7 +34,7 @@ const templateTemplate: StatsTemplate = {
   id: 'template', // ID unique de votre carte (doit correspondre au nom du dossier)
   name: 'Template', // Nom affiché
   description: 'Description de votre carte', // Description affichée dans le formulaire
-  applyTemplate: (currentValues) => {
+  applyTemplate: (currentValues: any) => {
     // Pré-remplit les champs du formulaire lors de la sélection du template
     return {
       ...currentValues,
@@ -87,6 +88,15 @@ const templateCard: CardDefinition = {
   // Types de stats de carte disponibles
   // Doit correspondre à cardStatTypes du template
   cardStatTypes: ['number', 'chart', 'template-recent'],
+  
+  // Clés de statistiques disponibles pour cette carte
+  // Utilisées pour le type 'number' et 'chart' dans le formulaire
+  // Format : [{ value: 'keyName', label: 'Libellé affiché' }]
+  availableStatKeys: [
+    { value: 'totalItems', label: 'Total Éléments' },
+    { value: 'pendingItems', label: 'Éléments en attente' },
+    // Ajoutez d'autres clés selon votre API
+  ],
   
   // Types TypeScript exportés (optionnel)
   // Peuvent être utilisés pour étendre les types globaux si nécessaire

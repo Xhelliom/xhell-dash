@@ -22,6 +22,7 @@ import type { App, CreateAppInput, CardStatType, CardStatConfig } from '@/lib/ty
 import { getCardStatTypes } from '@/lib/card-stat-types'
 import { getTemplateById } from '@/lib/stats-templates'
 import { normalizeCardStatConfig } from '@/lib/card-stat-utils'
+import { cardRegistry } from '@/lib/card-registry'
 
 interface CardDisplayFormProps {
   app?: App | null
@@ -30,22 +31,10 @@ interface CardDisplayFormProps {
 
 /**
  * Options de clés disponibles selon le template
+ * Récupère dynamiquement depuis le registre de cartes
  */
 function getAvailableStatKeys(templateId?: string): { value: string; label: string }[] {
-  if (templateId === 'plex') {
-    return [
-      { value: 'totalMovies', label: 'Total Films' },
-      { value: 'totalShows', label: 'Total Séries' },
-      { value: 'totalEpisodes', label: 'Total Épisodes' },
-      { value: 'totalUsers', label: 'Total Utilisateurs' },
-      { value: 'totalLibraries', label: 'Total Bibliothèques' },
-    ]
-  }
-  return [
-    { value: 'value', label: 'Valeur' },
-    { value: 'count', label: 'Compte' },
-    { value: 'total', label: 'Total' },
-  ]
+  return cardRegistry.getAvailableStatKeys(templateId)
 }
 
 export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {

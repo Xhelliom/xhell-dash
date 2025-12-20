@@ -7,7 +7,8 @@
 
 import { cardRegistry } from '@/lib/card-registry'
 import type { CardDefinition } from '@/lib/card-registry'
-import type { StatsTemplate, StatsDisplayOptions } from '@/lib/types'
+import type { StatsTemplate } from '@/lib/stats-templates'
+import type { StatsDisplayOptions } from '@/lib/types'
 import { PlexStatsPanel } from './panel'
 import { PlexRecentImages } from './card-stat'
 // Note: Le handler API n'est pas importé ici car il utilise fs (côté serveur uniquement)
@@ -20,7 +21,7 @@ const plexTemplate: StatsTemplate = {
   id: 'plex',
   name: 'Plex',
   description: 'Statistiques complètes pour Plex Media Server',
-  applyTemplate: (currentValues) => {
+  applyTemplate: (currentValues: any) => {
     return {
       ...currentValues,
       name: currentValues.name || 'Plex',
@@ -62,6 +63,14 @@ const plexCard: CardDefinition = {
     'plex-recent': PlexRecentImages,
   },
   cardStatTypes: ['number', 'chart', 'plex-recent'],
+  // Clés de statistiques disponibles pour Plex
+  availableStatKeys: [
+    { value: 'totalMovies', label: 'Total Films' },
+    { value: 'totalShows', label: 'Total Séries' },
+    { value: 'totalEpisodes', label: 'Total Épisodes' },
+    { value: 'totalUsers', label: 'Total Utilisateurs' },
+    { value: 'totalLibraries', label: 'Total Bibliothèques' },
+  ],
   types: {
     // Types exportés par cette carte (optionnel)
     // Peuvent être utilisés pour étendre les types globaux si nécessaire

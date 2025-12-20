@@ -30,6 +30,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import type { App, CreateAppInput, StatsDisplayOptions, PlexKPIOptions, CardStatType } from '@/lib/types'
 import { STATS_TEMPLATES, getTemplateById } from '@/lib/stats-templates'
+import { cardRegistry } from '@/lib/card-registry'
 
 interface AppFormProps {
   open: boolean
@@ -119,6 +120,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
 
   // État pour la configuration de la statistique de carte
   const [cardStatType, setCardStatType] = useState<CardStatType | ''>('')
+  const [cardStatCustomType, setCardStatCustomType] = useState<string>('') // Pour les types custom (ex: 'plex-recent')
   const [cardStatKey, setCardStatKey] = useState<string>('')
   const [cardStatLabel, setCardStatLabel] = useState<string>('')
 
@@ -127,21 +129,9 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
   const selectedTemplate = selectedTemplateId ? getTemplateById(selectedTemplateId) : null
 
   // Options de clés disponibles selon le template
+  // Récupère dynamiquement depuis le registre de cartes
   const getAvailableStatKeys = (): { value: string; label: string }[] => {
-    if (selectedTemplateId === 'plex') {
-      return [
-        { value: 'totalMovies', label: 'Total Films' },
-        { value: 'totalShows', label: 'Total Séries' },
-        { value: 'totalEpisodes', label: 'Total Épisodes' },
-        { value: 'totalUsers', label: 'Total Utilisateurs' },
-        { value: 'totalLibraries', label: 'Total Bibliothèques' },
-      ]
-    }
-    return [
-      { value: 'value', label: 'Valeur' },
-      { value: 'count', label: 'Compte' },
-      { value: 'total', label: 'Total' },
-    ]
+    return cardRegistry.getAvailableStatKeys(selectedTemplateId || undefined)
   }
 
   // Réinitialiser le formulaire quand le dialog s'ouvre/ferme ou quand l'app change
@@ -172,10 +162,12 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
         // Charger la configuration de la statistique de carte
         if (app.statsConfig?.cardStat) {
           setCardStatType(app.statsConfig.cardStat.type)
+          setCardStatCustomType(app.statsConfig.cardStat.customType || '')
           setCardStatKey(app.statsConfig.cardStat.key || '')
           setCardStatLabel(app.statsConfig.cardStat.label || '')
         } else {
           setCardStatType('')
+          setCardStatCustomType('')
           setCardStatKey('')
           setCardStatLabel('')
         }
@@ -203,6 +195,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
           },
         })
         setCardStatType('')
+        setCardStatCustomType('')
         setCardStatKey('')
         setCardStatLabel('')
       }
@@ -239,7 +232,20 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
         return false
       }
     }
-    if (statApiUrl && statApiUrl.trim()) {
+    // Validation pour le template générique : statApiUrl est obligatoire
+    if (selectedTemplateId === 'generic') {
+      if (!statApiUrl || !statApiUrl.trim()) {
+        alert('L\'URL de l\'API de statistiques est obligatoire pour le template générique')
+        return false
+      }
+      try {
+        new URL(statApiUrl)
+      } catch {
+        alert('L\'URL de l\'API de statistiques n\'est pas valide')
+        return false
+      }
+    } else if (statApiUrl && statApiUrl.trim()) {
+      // Pour les autres templates, statApiUrl est optionnel mais doit être valide si fourni
       try {
         new URL(statApiUrl)
       } catch {
@@ -354,6 +360,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
           displayOptions: selectedTemplateId ? displayOptions : undefined,
           cardStat: cardStatType ? {
             type: cardStatType,
+            customType: cardStatCustomType || undefined,
             key: cardStatKey.trim() || undefined,
             label: cardStatLabel.trim() || undefined,
           } : undefined,
@@ -400,6 +407,28 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
               placeholder="https://example.com"
               required
             />
+          </div>
+
+          {/* Sélection du template de stats */}
+          <div className="space-y-2 border-t pt-4">
+            <Label htmlFor="statsTemplate">Template de statistiques (optionnel)</Label>
+            <Select value={selectedTemplateId || undefined} onValueChange={handleTemplateChange}>
+              <SelectTrigger id="statsTemplate">
+                <SelectValue placeholder="Aucun template" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATS_TEMPLATES.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.name} - {template.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedTemplate && (
+              <p className="text-xs text-muted-foreground">
+                {selectedTemplate.description}
+              </p>
+            )}
           </div>
 
           {/* Type de logo */}
@@ -452,45 +481,64 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
             )}
           </div>
 
-          {/* API de statistiques (optionnel) */}
-          <div className="space-y-2">
-            <Label htmlFor="statApiUrl">URL de l'API de statistiques (optionnel)</Label>
-            <Input
-              id="statApiUrl"
-              type="url"
-              value={statApiUrl}
-              onChange={(e) => setStatApiUrl(e.target.value)}
-              placeholder="https://api.example.com/stats"
-            />
-          </div>
+          {/* API de statistiques (optionnel) - affiché seulement si template "générique" est sélectionné */}
+          {selectedTemplateId === 'generic' && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="statApiUrl">URL de l'API de statistiques *</Label>
+                <Input
+                  id="statApiUrl"
+                  type="url"
+                  value={statApiUrl}
+                  onChange={(e) => setStatApiUrl(e.target.value)}
+                  placeholder="https://api.example.com/stats"
+                  required={selectedTemplateId === 'generic'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  URL de l'API externe pour récupérer les statistiques
+                </p>
+              </div>
 
-          {/* Libellé de la statistique (optionnel) */}
-          <div className="space-y-2">
-            <Label htmlFor="statLabel">Libellé de la statistique (optionnel)</Label>
-            <Input
-              id="statLabel"
-              value={statLabel}
-              onChange={(e) => setStatLabel(e.target.value)}
-              placeholder="Ex: Films, Utilisateurs, Requêtes..."
-            />
-          </div>
+              {/* Libellé de la statistique (optionnel) */}
+              <div className="space-y-2">
+                <Label htmlFor="statLabel">Libellé de la statistique (optionnel)</Label>
+                <Input
+                  id="statLabel"
+                  value={statLabel}
+                  onChange={(e) => setStatLabel(e.target.value)}
+                  placeholder="Ex: Films, Utilisateurs, Requêtes..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Libellé affiché pour la statistique sur la carte
+                </p>
+              </div>
+            </>
+          )}
 
-          {/* Configuration de la statistique sur la carte */}
-          <div className="border-t pt-4 mt-4 space-y-4">
-            <h3 className="text-sm font-semibold">Statistique sur la carte</h3>
+          {/* Configuration de la statistique sur la carte - affiché seulement si un template est sélectionné */}
+          {selectedTemplateId && (
+            <div className="border-t pt-4 mt-4 space-y-4">
+              <h3 className="text-sm font-semibold">Statistique sur la carte</h3>
 
             {/* Type de statistique */}
             <div className="space-y-2">
               <Label htmlFor="cardStatType">Type d'affichage</Label>
               <Select
-                value={cardStatType || 'none'}
+                value={cardStatType === 'custom' ? cardStatCustomType : (cardStatType || 'none')}
                 onValueChange={(value) => {
                   if (value === 'none') {
                     setCardStatType('')
+                    setCardStatCustomType('')
                     setCardStatKey('')
                     setCardStatLabel('')
-                  } else {
+                  } else if (value === 'number' || value === 'chart') {
+                    // Types standards
                     setCardStatType(value as CardStatType)
+                    setCardStatCustomType('')
+                  } else {
+                    // Types custom : utiliser 'custom' comme type et la valeur comme customType
+                    setCardStatType('custom')
+                    setCardStatCustomType(value)
                   }
                 }}
               >
@@ -501,15 +549,31 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                   <SelectItem value="none">Aucun</SelectItem>
                   <SelectItem value="number">Nombre</SelectItem>
                   <SelectItem value="chart">Graphique (courbe)</SelectItem>
-                  {selectedTemplateId === 'plex' && (
-                    <SelectItem value="plex-recent">Images des 3 derniers ajouts (Plex)</SelectItem>
-                  )}
+                  {/* Types custom spécifiques au template sélectionné */}
+                  {selectedTemplateId && (() => {
+                    const card = cardRegistry.get(selectedTemplateId)
+                    const customTypes = card?.cardStatTypes?.filter(
+                      (type) => type !== 'number' && type !== 'chart'
+                    ) || []
+                    return customTypes.map((customType) => {
+                      // Générer un libellé lisible depuis le customType
+                      const label = customType
+                        .split('-')
+                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ')
+                      return (
+                        <SelectItem key={customType} value={customType}>
+                          {label} ({selectedTemplate?.name || selectedTemplateId})
+                        </SelectItem>
+                      )
+                    })
+                  })()}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Clé de la statistique (si type = number ou chart) */}
-            {cardStatType && cardStatType !== ('plex-recent' as any) && (
+            {/* Clé de la statistique (si type = number ou chart, pas pour les types custom) */}
+            {cardStatType && (cardStatType === 'number' || cardStatType === 'chart') && (
               <div className="space-y-2">
                 <Label htmlFor="cardStatKey">Clé de la statistique</Label>
                 <Select
@@ -548,29 +612,8 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                 </p>
               </div>
             )}
-          </div>
-
-          {/* Sélection du template de stats */}
-          <div className="space-y-2">
-            <Label htmlFor="statsTemplate">Template de statistiques (optionnel)</Label>
-            <Select value={selectedTemplateId || undefined} onValueChange={handleTemplateChange}>
-              <SelectTrigger id="statsTemplate">
-                <SelectValue placeholder="Aucun template" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATS_TEMPLATES.map((template) => (
-                  <SelectItem key={template.id} value={template.id}>
-                    {template.name} - {template.description}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedTemplate && (
-              <p className="text-xs text-muted-foreground">
-                {selectedTemplate.description}
-              </p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Options d'affichage si un template est sélectionné */}
           {selectedTemplate && (
