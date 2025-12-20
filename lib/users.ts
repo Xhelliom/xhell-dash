@@ -103,3 +103,26 @@ export async function ensureDefaultAdmin(): Promise<void> {
   })
 }
 
+/**
+ * Vérifie si l'admin par défaut utilise encore le mot de passe par défaut.
+ * Cette fonction permet de savoir si l'utilisateur a déjà changé le mot de passe
+ * initial, pour masquer les instructions de connexion par défaut dans l'UI.
+ * 
+ * @returns true si l'admin par défaut existe et utilise encore le mot de passe "Admin123!"
+ */
+export async function isDefaultPasswordStillActive(): Promise<boolean> {
+  const defaultEmail = "xhell-admin@example.com"
+  const defaultPassword = "Admin123!"
+
+  // Recherche de l'utilisateur admin par défaut
+  const user = await findUserByEmail(defaultEmail)
+  
+  // Si l'utilisateur n'existe pas, le mot de passe par défaut n'est pas actif
+  if (!user) {
+    return false
+  }
+
+  // Vérifie si le mot de passe correspond toujours au mot de passe par défaut
+  return verifyPassword(defaultPassword, user)
+}
+

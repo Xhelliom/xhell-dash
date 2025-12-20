@@ -105,6 +105,13 @@ interface ChartTooltipProps
   indicator?: "line" | "dot" | "dashed"
   nameKey?: string
   labelKey?: string
+  payload?: any[]
+  active?: boolean
+  className?: string
+  label?: any
+  labelFormatter?: any
+  labelClassName?: string
+  formatter?: any
 }
 
 // Composant ChartTooltip

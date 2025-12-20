@@ -29,8 +29,10 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { App, CreateAppInput, StatsDisplayOptions, PlexKPIOptions, CardStatType } from '@/lib/types'
-import { STATS_TEMPLATES, getTemplateById } from '@/lib/stats-templates'
+import { getTemplateById } from '@/lib/stats-templates'
 import { cardRegistry } from '@/lib/card-registry'
+// Importer les cartes pour qu'elles s'enregistrent
+import '@/cards'
 
 interface AppFormProps {
   open: boolean
@@ -124,9 +126,10 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
   const [cardStatKey, setCardStatKey] = useState<string>('')
   const [cardStatLabel, setCardStatLabel] = useState<string>('')
 
-  // Vérifier si c'est une application Plex pour afficher les champs spécifiques
-  const isPlex = name.toLowerCase() === 'plex'
+  // Récupérer le template sélectionné
   const selectedTemplate = selectedTemplateId ? getTemplateById(selectedTemplateId) : null
+  // Vérifier si le template Plex est sélectionné pour afficher les champs spécifiques
+  const isPlex = selectedTemplateId === 'plex'
 
   // Options de clés disponibles selon le template
   // Récupère dynamiquement depuis le registre de cartes
@@ -417,7 +420,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                 <SelectValue placeholder="Aucun template" />
               </SelectTrigger>
               <SelectContent>
-                {STATS_TEMPLATES.map((template) => (
+                {cardRegistry.getTemplates().map((template) => (
                   <SelectItem key={template.id} value={template.id}>
                     {template.name} - {template.description}
                   </SelectItem>

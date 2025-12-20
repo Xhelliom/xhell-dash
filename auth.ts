@@ -84,7 +84,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.name = user.name
         token.email = user.email
-        // @ts-expect-error - champ custom
         token.role = (user as any).role ?? "user"
       }
       return token

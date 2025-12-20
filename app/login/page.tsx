@@ -15,6 +15,7 @@
 import { redirect } from "next/navigation"
 import { AuthError } from "next-auth"
 import { signIn } from "@/auth"
+import { isDefaultPasswordStillActive } from "@/lib/users"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -33,6 +34,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   
   // URL de redirection après login réussi (par défaut, le dashboard racine)
   const callbackUrl = params.callbackUrl ?? "/"
+
+  // Vérifie si le mot de passe admin par défaut est toujours actif
+  // pour décider d'afficher ou non les instructions de connexion
+  const showDefaultCredentials = await isDefaultPasswordStillActive()
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
@@ -105,12 +110,35 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </form>
 
           {/* Petit texte d'aide pour la configuration de la démo */}
-          <p className="mt-4 text-xs text-muted-foreground text-center">
-            Un administrateur par défaut est créé automatiquement s&apos;il
-            n&apos;existe pas : email{" "}
-            <code className="font-mono">xhell-admin@example.com</code> / mot de passe{" "}
-            <code className="font-mono">Admin123!</code>.
-          </p>
+          {/* Affiche les identifiants ET pré-remplit si le mot de passe n'a pas été changé */}
+          {showDefaultCredentials && (
+            <>
+              <p className="mt-4 text-xs text-muted-foreground text-center">
+                Un administrateur par défaut est créé automatiquement s&apos;il
+                n&apos;existe pas : email{" "}
+                <code className="font-mono">xhell-admin@example.com</code> / mot de passe{" "}
+                <code className="font-mono">Admin123!</code>.
+                <br />
+                <button
+                  type="button"
+                  className="underline text-xs mt-1"
+                  style={{ color: "inherit", cursor: "pointer", background: "none", border: "none", padding: 0 }}
+                  onClick={() => {
+                    // Autofill les champs email et password si présents dans le DOM
+                    const emailInput = document.getElementById("email") as HTMLInputElement | null
+                    const passInput = document.getElementById("password") as HTMLInputElement | null
+                    if (emailInput) emailInput.value = "xhell-admin@example.com"
+                    if (passInput) passInput.value = "Admin123!"
+                    // Tente de mettre le focus sur le bouton Se connecter
+                    const btn = document.querySelector('button[type="submit"]') as HTMLButtonElement | null
+                    if (btn) btn.focus()
+                  }}
+                >
+                  Remplir automatiquement ces identifiants
+                </button>
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

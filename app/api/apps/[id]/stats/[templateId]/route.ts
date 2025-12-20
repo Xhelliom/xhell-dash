@@ -82,8 +82,9 @@ export async function GET(
       params: Promise.resolve({ id }),
     })
   } catch (error: any) {
+    const { templateId: errorTemplateId } = await params
     console.error(
-      `Erreur lors du routage vers la carte pour templateId "${templateId}":`,
+      `Erreur lors du routage vers la carte pour templateId "${errorTemplateId}":`,
       error
     )
 
