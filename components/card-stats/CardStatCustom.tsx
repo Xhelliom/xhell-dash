@@ -61,7 +61,7 @@ export function CardStatCustom({ app, customType, config }: CardStatCustomProps)
     console.warn(
       `[CardStatCustom] Aucun composant trouvé pour le type custom "${customType}"`
     )
-    return null
+      return null
   }
 
   // Props standardisées pour tous les composants de stats de carte

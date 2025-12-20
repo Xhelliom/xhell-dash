@@ -40,7 +40,7 @@ export function StatsPanel({ open, onOpenChange, appId, appName, templateId }: S
         console.warn(
             `[StatsPanel] Aucun panneau de statistiques trouvé pour le template "${templateId}"`
         )
-        return null
+            return null
     }
 
     // Récupérer le composant de panneau de la carte

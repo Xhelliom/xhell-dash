@@ -140,7 +140,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
     return cardRegistry.getAvailableStatKeys(selectedTemplateId || undefined)
   }
 
-  // Charger les templates disponibles immédiatement et quand le dialog s'ouvre
+  // Charger les templates disponibles au montage
   useEffect(() => {
     // Charger les templates dès que le composant est monté
     const templates = cardRegistry.getTemplates()
@@ -153,32 +153,21 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
     }
   }, []) // Charger une seule fois au montage
 
-  // Recharger les templates quand le dialog s'ouvre (au cas où de nouvelles cartes auraient été ajoutées)
-  useEffect(() => {
-    if (open) {
-      const templates = cardRegistry.getTemplates()
-      if (templates.length > 0) {
-        setAvailableTemplates(templates.map(t => ({
-          id: t.id,
-          name: t.name,
-          description: t.description
-        })))
-      }
-    }
-  }, [open])
-
   // Réinitialiser le formulaire quand le dialog s'ouvre/ferme ou quand l'app change
   useEffect(() => {
     if (open) {
-      // S'assurer que les templates sont chargés avant de définir selectedTemplateId
+      // Charger les templates en premier
       const templates = cardRegistry.getTemplates()
-      if (templates.length > 0 && availableTemplates.length === 0) {
-        setAvailableTemplates(templates.map(t => ({
-          id: t.id,
-          name: t.name,
-          description: t.description
-        })))
-      }
+      const templatesArray = templates.length > 0 
+        ? templates.map(t => ({
+            id: t.id,
+            name: t.name,
+            description: t.description
+          }))
+        : []
+      
+      // Mettre à jour les templates disponibles
+      setAvailableTemplates(templatesArray)
       
       if (app) {
         // Mode édition : remplir avec les données de l'app
@@ -192,8 +181,14 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
         setPlexToken((app as any).plexToken || '')
         setPlexServerUrl((app as any).plexServerUrl || app.url)
         // Charger le template et les options d'affichage
+        // Définir selectedTemplateId après avoir chargé les templates
         const templateId = app.statsConfig?.templateId || ''
-        setSelectedTemplateId(templateId)
+        // Vérifier que le template existe dans la liste avant de le sélectionner
+        if (templateId && templatesArray.some(t => t.id === templateId)) {
+          setSelectedTemplateId(templateId)
+        } else {
+          setSelectedTemplateId('')
+        }
         if (app.statsConfig?.displayOptions) {
           setDisplayOptions(app.statsConfig.displayOptions)
         } else if (templateId) {
@@ -243,7 +238,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
         setCardStatLabel('')
       }
     }
-  }, [open, app, availableTemplates.length])
+  }, [open, app])
 
   /**
    * Valide les données du formulaire avant soumission
@@ -455,7 +450,11 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
           {/* Sélection du template de stats */}
           <div className="space-y-2 border-t pt-4">
             <Label htmlFor="statsTemplate">Template de statistiques (optionnel)</Label>
-            <Select value={selectedTemplateId || undefined} onValueChange={handleTemplateChange}>
+            <Select 
+              key={`template-select-${availableTemplates.length}-${selectedTemplateId}`}
+              value={selectedTemplateId || undefined} 
+              onValueChange={handleTemplateChange}
+            >
               <SelectTrigger id="statsTemplate">
                 <SelectValue placeholder="Aucun template" />
               </SelectTrigger>

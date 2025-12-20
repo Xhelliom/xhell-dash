@@ -278,7 +278,7 @@ export function PlexStatsPanel({ open, onOpenChange, appId, appName }: StatsPane
                                                         <img
                                                             src={media.thumb}
                                                             alt={media.title}
-                                                            className="w-16 h-24 object-cover rounded"
+                                                            className="w-16 h-24 object-cover rounded-sm"
                                                             onError={(e) => {
                                                                 // Cacher l'image en cas d'erreur
                                                                 e.currentTarget.style.display = 'none'
