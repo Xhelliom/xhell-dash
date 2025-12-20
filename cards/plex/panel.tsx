@@ -19,15 +19,10 @@ import {
 } from '@/components/ui/sheet'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Film, Tv, Users, Library, Calendar, Loader2 } from 'lucide-react'
-import type { PlexStats, PlexRecentMedia, StatsDisplayOptions, App } from '@/lib/types'
+import type { PlexStats, PlexRecentMedia } from './types'
+import type { StatsDisplayOptions, App } from '@/lib/types'
+import type { StatsPanelProps } from '@/lib/card-registry'
 import { getTemplateById } from '@/lib/stats-templates'
-
-interface PlexStatsPanelProps {
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    appId: string
-    appName: string
-}
 
 /**
  * Formate une date en format lisible (ex: "Il y a 2 jours")
@@ -65,7 +60,7 @@ function formatDate(dateString: string): string {
     })
 }
 
-export function PlexStatsPanel({ open, onOpenChange, appId, appName }: PlexStatsPanelProps) {
+export function PlexStatsPanel({ open, onOpenChange, appId, appName }: StatsPanelProps) {
     const [stats, setStats] = useState<PlexStats | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)

@@ -1,5 +1,5 @@
 /**
- * API Route pour récupérer les statistiques détaillées de Plex
+ * Handler API pour la route des statistiques Plex
  * 
  * GET /api/apps/[id]/stats/plex
  * Récupère les KPI et les derniers médias ajoutés depuis l'API Plex
@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { readApps } from '@/lib/db'
-import type { PlexStats, PlexRecentMedia, PlexLibraryStat } from '@/lib/types'
+import type { PlexStats, PlexRecentMedia, PlexLibraryStat } from './types'
 
 /**
  * GET /api/apps/[id]/stats/plex

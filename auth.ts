@@ -40,7 +40,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = credentials?.email
         const password = credentials?.password
 
-        if (!email || !password) {
+        // Vérification que les credentials sont présents et de type string
+        if (!email || !password || typeof email !== "string" || typeof password !== "string") {
           return null
         }
 
@@ -95,7 +96,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (session.user) {
         session.user.name = token.name
-        session.user.email = token.email as string | null
+        session.user.email = token.email ?? ""
         // @ts-expect-error - champ custom
         session.user.role = (token as any).role ?? "user"
       }
