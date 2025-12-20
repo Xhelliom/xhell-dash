@@ -82,6 +82,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       // Lors de la première connexion, on fusionne les infos utilisateur
       if (user) {
+        token.id = user.id
         token.name = user.name
         token.email = user.email
         token.role = (user as any).role ?? "user"
@@ -94,6 +95,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
      */
     async session({ session, token }) {
       if (session.user) {
+        // @ts-expect-error - champ custom
+        session.user.id = (token as any).id
         session.user.name = token.name
         session.user.email = token.email ?? ""
         // @ts-expect-error - champ custom

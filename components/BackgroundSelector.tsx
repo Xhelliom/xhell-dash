@@ -2,18 +2,21 @@
  * Composant BackgroundSelector
  * 
  * Permet de sélectionner l'effet de background à appliquer au dashboard
- * Affiche une liste d'options avec aperçu visuel
+ * Affiche une liste déroulante avec toutes les options disponibles
  */
 
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import type { BackgroundEffect } from '@/lib/types'
-import { Check } from 'lucide-react'
 
 interface BackgroundSelectorProps {
   /**
@@ -97,6 +100,7 @@ const backgroundEffects: Array<{
 
 /**
  * Composant pour sélectionner l'effet de background
+ * Utilise une liste déroulante pour économiser l'espace
  */
 export function BackgroundSelector({
   value,
@@ -104,7 +108,7 @@ export function BackgroundSelector({
   className,
 }: BackgroundSelectorProps) {
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn('space-y-2', className)}>
       <div>
         <Label className="text-base font-semibold">Effet de Background</Label>
         <p className="text-sm text-muted-foreground mt-1">
@@ -112,50 +116,27 @@ export function BackgroundSelector({
         </p>
       </div>
 
-      <RadioGroup value={value} onValueChange={onValueChange}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Sélectionner un effet" />
+        </SelectTrigger>
+        <SelectContent>
           {backgroundEffects.map((effect) => (
-            <div key={effect.value} className="relative">
-              <RadioGroupItem
-                value={effect.value}
-                id={effect.value}
-                className="peer sr-only"
-              />
-              <Label
-                htmlFor={effect.value}
-                className={cn(
-                  'flex flex-col gap-2 rounded-lg border-2 p-4 cursor-pointer',
-                  'hover:bg-accent hover:border-primary/50 transition-colors',
-                  'peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-accent',
-                  'peer-focus-visible:ring-2 peer-focus-visible:ring-ring'
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium">{effect.label}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {effect.description}
-                    </span>
-                  </div>
-                  <div
-                    className={cn(
-                      'h-5 w-5 rounded-full border-2 flex items-center justify-center',
-                      'peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary',
-                      value === effect.value
-                        ? 'border-primary bg-primary'
-                        : 'border-muted-foreground'
-                    )}
-                  >
-                    {value === effect.value && (
-                      <Check className="h-3 w-3 text-primary-foreground" />
-                    )}
-                  </div>
-                </div>
-              </Label>
-            </div>
+            <SelectItem 
+              key={effect.value} 
+              value={effect.value}
+              title={effect.description}
+            >
+              <div className="flex flex-col gap-0.5 py-0.5">
+                <span className="font-medium leading-tight">{effect.label}</span>
+                <span className="text-xs text-muted-foreground leading-tight">
+                  {effect.description}
+                </span>
+              </div>
+            </SelectItem>
           ))}
-        </div>
-      </RadioGroup>
+        </SelectContent>
+      </Select>
     </div>
   )
 }

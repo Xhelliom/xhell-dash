@@ -42,6 +42,17 @@ export async function PUT(
     // Récupérer l'ID depuis les params
     const { id } = await params
 
+    // Récupérer l'ID de l'utilisateur connecté depuis la session
+    const currentUserId = session.user.id
+
+    // Empêcher la modification de son propre compte (utiliser /api/users/profile à la place)
+    if (id === currentUserId) {
+      return NextResponse.json(
+        { error: 'Vous ne pouvez pas modifier votre propre compte via cette route. Utilisez "Mon profil" à la place.' },
+        { status: 400 }
+      )
+    }
+
     // Lire les données de la requête
     const body = await request.json()
     const { email, password, role } = body
@@ -67,6 +78,25 @@ export async function PUT(
     if (role !== undefined && role !== 'user' && role !== 'admin') {
       return NextResponse.json(
         { error: 'Rôle invalide. Doit être "user" ou "admin"' },
+        { status: 400 }
+      )
+    }
+
+    // Récupérer l'utilisateur cible pour vérifier son rôle actuel
+    const { prisma } = await import('@/lib/prisma')
+    const targetUser = await prisma.user.findUnique({ where: { id } })
+    
+    if (!targetUser) {
+      return NextResponse.json(
+        { error: 'Utilisateur introuvable' },
+        { status: 404 }
+      )
+    }
+
+    // Empêcher un admin de changer son propre rôle d'admin à user
+    if (id === currentUserId && targetUser.role === 'admin' && role === 'user') {
+      return NextResponse.json(
+        { error: 'Vous ne pouvez pas changer votre propre rôle d\'administrateur à utilisateur' },
         { status: 400 }
       )
     }
@@ -135,6 +165,17 @@ export async function DELETE(
 
     // Récupérer l'ID depuis les params
     const { id } = await params
+
+    // Récupérer l'ID de l'utilisateur connecté depuis la session
+    const currentUserId = session.user.id
+
+    // Empêcher la suppression de son propre compte
+    if (id === currentUserId) {
+      return NextResponse.json(
+        { error: 'Vous ne pouvez pas supprimer votre propre compte' },
+        { status: 400 }
+      )
+    }
 
     // Supprimer l'utilisateur
     await deleteUser(id)

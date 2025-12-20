@@ -1,7 +1,7 @@
 /**
  * Composant BackgroundConfigButton
  * 
- * Bouton flottant pour ouvrir le panneau de configuration du background
+ * Bouton flottant pour ouvrir le panneau de configuration des paramètres
  * Apparaît uniquement en mode édition, au-dessus du bouton de configuration
  */
 
@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Palette, Save, Loader2 } from 'lucide-react'
+import { Settings, Save, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface BackgroundConfigButtonProps {
@@ -22,7 +22,7 @@ interface BackgroundConfigButtonProps {
    */
   className?: string
   /**
-   * Si true, le bouton affiche "Sauvegarder" au lieu de "Background"
+   * Si true, le bouton affiche "Sauvegarder" au lieu de "Paramètres"
    */
   isSaveMode?: boolean
   /**
@@ -36,7 +36,7 @@ interface BackgroundConfigButtonProps {
 }
 
 /**
- * Bouton flottant pour configurer le background
+ * Bouton flottant pour configurer les paramètres
  * Peut se transformer en bouton "Sauvegarder" quand le drawer est ouvert
  * Gère son propre état pour éviter les conflits après la sauvegarde
  */
@@ -136,8 +136,8 @@ export function BackgroundConfigButton({
   }
 
   // Déterminer le texte et les styles selon le mode
-  const buttonText = isSaveMode ? 'Sauvegarder' : 'Background'
-  const buttonLabel = isSaveMode ? 'Sauvegarder les paramètres' : 'Configurer le background'
+  const buttonText = isSaveMode ? 'Sauvegarder' : 'Paramètres'
+  const buttonLabel = isSaveMode ? 'Sauvegarder les paramètres' : 'Configurer les paramètres'
   const buttonWidth = isSaveMode ? 'w-[180px]' : 'w-[160px]'
   const maxTextWidth = isSaveMode ? 'max-w-[150px]' : 'max-w-[130px]'
 
@@ -179,7 +179,7 @@ export function BackgroundConfigButton({
         ) : isSaveMode ? (
           <Save className="h-5 w-5 shrink-0" />
         ) : (
-          <Palette className="h-5 w-5 shrink-0" />
+          <Settings className="h-5 w-5 shrink-0" />
         )}
         <span
           className={cn(
