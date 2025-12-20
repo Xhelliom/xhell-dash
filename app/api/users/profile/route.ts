@@ -77,7 +77,7 @@ export async function PUT(request: NextRequest) {
 
     // Lire les données de la requête
     const body = await request.json()
-    const { email, password } = body
+    const { email, password, currentPassword } = body
 
     // Validation des données
     if (email !== undefined) {
@@ -88,13 +88,53 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         )
       }
+
+      // Si l'email change, vérifier que le mot de passe actuel est fourni
+      if (email.toLowerCase() !== user.email.toLowerCase()) {
+        if (!currentPassword) {
+          return NextResponse.json(
+            { error: 'Le mot de passe actuel est requis pour modifier l\'email' },
+            { status: 400 }
+          )
+        }
+
+        // Vérifier que le mot de passe actuel est correct
+        const { verifyPassword } = await import('@/lib/users')
+        const isCurrentPasswordValid = await verifyPassword(currentPassword, user)
+        if (!isCurrentPasswordValid) {
+          return NextResponse.json(
+            { error: 'Mot de passe actuel incorrect' },
+            { status: 401 }
+          )
+        }
+      }
     }
 
-    if (password !== undefined && password.length < 8) {
-      return NextResponse.json(
-        { error: 'Le mot de passe doit contenir au moins 8 caractères' },
-        { status: 400 }
-      )
+    if (password !== undefined) {
+      if (password.length < 8) {
+        return NextResponse.json(
+          { error: 'Le mot de passe doit contenir au moins 8 caractères' },
+          { status: 400 }
+        )
+      }
+
+      // Si le mot de passe change, vérifier que le mot de passe actuel est fourni
+      if (!currentPassword) {
+        return NextResponse.json(
+          { error: 'Le mot de passe actuel est requis pour modifier le mot de passe' },
+          { status: 400 }
+        )
+      }
+
+      // Vérifier que le mot de passe actuel est correct
+      const { verifyPassword } = await import('@/lib/users')
+      const isCurrentPasswordValid = await verifyPassword(currentPassword, user)
+      if (!isCurrentPasswordValid) {
+        return NextResponse.json(
+          { error: 'Mot de passe actuel incorrect' },
+          { status: 401 }
+        )
+      }
     }
 
     // Mettre à jour le profil de l'utilisateur
