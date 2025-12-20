@@ -105,6 +105,9 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
 
   // État pour le template de stats sélectionné
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
+  
+  // État pour stocker les templates disponibles
+  const [availableTemplates, setAvailableTemplates] = useState<Array<{ id: string; name: string; description: string }>>([])
 
   // État pour les options d'affichage
   const [displayOptions, setDisplayOptions] = useState<StatsDisplayOptions>({
@@ -137,9 +140,46 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
     return cardRegistry.getAvailableStatKeys(selectedTemplateId || undefined)
   }
 
+  // Charger les templates disponibles immédiatement et quand le dialog s'ouvre
+  useEffect(() => {
+    // Charger les templates dès que le composant est monté
+    const templates = cardRegistry.getTemplates()
+    if (templates.length > 0) {
+      setAvailableTemplates(templates.map(t => ({
+        id: t.id,
+        name: t.name,
+        description: t.description
+      })))
+    }
+  }, []) // Charger une seule fois au montage
+
+  // Recharger les templates quand le dialog s'ouvre (au cas où de nouvelles cartes auraient été ajoutées)
+  useEffect(() => {
+    if (open) {
+      const templates = cardRegistry.getTemplates()
+      if (templates.length > 0) {
+        setAvailableTemplates(templates.map(t => ({
+          id: t.id,
+          name: t.name,
+          description: t.description
+        })))
+      }
+    }
+  }, [open])
+
   // Réinitialiser le formulaire quand le dialog s'ouvre/ferme ou quand l'app change
   useEffect(() => {
     if (open) {
+      // S'assurer que les templates sont chargés avant de définir selectedTemplateId
+      const templates = cardRegistry.getTemplates()
+      if (templates.length > 0 && availableTemplates.length === 0) {
+        setAvailableTemplates(templates.map(t => ({
+          id: t.id,
+          name: t.name,
+          description: t.description
+        })))
+      }
+      
       if (app) {
         // Mode édition : remplir avec les données de l'app
         setName(app.name)
@@ -203,7 +243,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
         setCardStatLabel('')
       }
     }
-  }, [open, app])
+  }, [open, app, availableTemplates.length])
 
   /**
    * Valide les données du formulaire avant soumission
@@ -420,7 +460,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                 <SelectValue placeholder="Aucun template" />
               </SelectTrigger>
               <SelectContent>
-                {cardRegistry.getTemplates().map((template) => (
+                {availableTemplates.map((template) => (
                   <SelectItem key={template.id} value={template.id}>
                     {template.name} - {template.description}
                   </SelectItem>

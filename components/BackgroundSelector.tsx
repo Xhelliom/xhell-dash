@@ -96,6 +96,36 @@ const backgroundEffects: Array<{
     label: 'Shimmer',
     description: 'Effet de brillance traversant',
   },
+  {
+    value: 'diamond-pattern',
+    label: 'Losanges',
+    description: 'Motif de losanges répétitif',
+  },
+  {
+    value: 'grid-svg',
+    label: 'Grille SVG',
+    description: 'Grille précise avec motifs SVG',
+  },
+  {
+    value: 'dots-svg',
+    label: 'Points SVG',
+    description: 'Points nets et réguliers',
+  },
+  {
+    value: 'waves-pattern',
+    label: 'Vagues',
+    description: 'Motif de vagues répétitif',
+  },
+  {
+    value: 'hexagon-pattern',
+    label: 'Hexagones',
+    description: 'Motif hexagonal répétitif',
+  },
+  {
+    value: 'crosshatch-pattern',
+    label: 'Hachures',
+    description: 'Motif de hachures croisées',
+  },
 ]
 
 /**

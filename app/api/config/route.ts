@@ -96,6 +96,12 @@ export async function PUT(request: NextRequest) {
       'noise',
       'mesh-animated',
       'shimmer',
+      'diamond-pattern',
+      'grid-svg',
+      'dots-svg',
+      'waves-pattern',
+      'hexagon-pattern',
+      'crosshatch-pattern',
     ]
 
     if (

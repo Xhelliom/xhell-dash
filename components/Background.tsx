@@ -21,6 +21,12 @@ export type BackgroundEffect =
     | 'noise'
     | 'mesh-animated'
     | 'shimmer'
+    | 'diamond-pattern'
+    | 'grid-svg'
+    | 'dots-svg'
+    | 'waves-pattern'
+    | 'hexagon-pattern'
+    | 'crosshatch-pattern'
 
 interface BackgroundProps {
     /**
@@ -56,6 +62,12 @@ export function Background({ effect = 'mesh-animated', className, children }: Ba
         'noise': 'bg-noise',
         'mesh-animated': 'bg-mesh-animated',
         'shimmer': 'bg-shimmer',
+        'diamond-pattern': 'bg-diamond-pattern',
+        'grid-svg': 'bg-grid-svg',
+        'dots-svg': 'bg-dots-svg',
+        'waves-pattern': 'bg-waves-pattern',
+        'hexagon-pattern': 'bg-hexagon-pattern',
+        'crosshatch-pattern': 'bg-crosshatch-pattern',
     }
 
     return (

@@ -266,6 +266,12 @@ export type BackgroundEffect =
   | 'noise'
   | 'mesh-animated'
   | 'shimmer'
+  | 'diamond-pattern'
+  | 'grid-svg'
+  | 'dots-svg'
+  | 'waves-pattern'
+  | 'hexagon-pattern'
+  | 'crosshatch-pattern'
 
 /**
  * Identifiant de thème de couleur prédéfini

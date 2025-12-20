@@ -9,6 +9,8 @@
 
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import { cn } from '@/lib/utils'
 import type { RadiusPreset, ShadowPreset, FontPreset, DensityPreset, StylePreset } from '@/lib/types'
 import { Check, Square, Circle, Type, FileText, Code, Minus, Layout, Plus } from 'lucide-react'
@@ -163,13 +165,14 @@ export function StyleSelector({
   }
 
   return (
-    <div className={cn('space-y-6', className)}>
-      <div>
-        <Label className="text-base font-semibold">Style</Label>
-        <p className="text-sm text-muted-foreground mt-1">
-          Personnalisez l'apparence avec les coins arrondis, ombres, polices et espacements
-        </p>
-      </div>
+    <TooltipProvider delayDuration={200}>
+      <div className={cn('space-y-6', className)}>
+        <div>
+          <Label className="text-base font-semibold">Style</Label>
+          <p className="text-sm text-muted-foreground mt-1">
+            Personnalisez l'apparence avec les coins arrondis, ombres, polices et espacements
+          </p>
+        </div>
 
       {/* Section Radius (Coins Arrondis) */}
       <div className="space-y-3">
@@ -178,55 +181,50 @@ export function StyleSelector({
           value={value.radius}
           onValueChange={(newValue) => updatePreset('radius', newValue as RadiusPreset)}
         >
-          <div className="grid grid-cols-3 gap-3">
+          <div className="flex gap-3">
             {radiusOptions.map((option) => {
               const Icon = option.icon
+              const isSelected = value.radius === option.value
               return (
-                <div key={option.value} className="relative">
-                  <RadioGroupItem
-                    value={option.value}
-                    id={`radius-${option.value}`}
-                    className="peer sr-only"
-                  />
-                  <Label
-                    htmlFor={`radius-${option.value}`}
-                    className={cn(
-                      'flex flex-col items-center gap-2 rounded-lg border-2 p-4 cursor-pointer',
-                      'hover:bg-accent hover:border-primary/50 transition-colors',
-                      'peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-accent',
-                      'peer-focus-visible:ring-2 peer-focus-visible:ring-ring'
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        'h-8 w-8',
-                        option.iconClass,
-                        value.radius === option.value
-                          ? 'text-primary'
-                          : 'text-muted-foreground'
-                      )}
-                    />
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-sm font-medium">{option.label}</span>
-                      <span className="text-xs text-muted-foreground text-center">
-                        {option.description}
-                      </span>
+                <TooltipPrimitive.Root key={option.value} delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <div className="relative">
+                      <RadioGroupItem
+                        value={option.value}
+                        id={`radius-${option.value}`}
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor={`radius-${option.value}`}
+                        className={cn(
+                          'flex items-center justify-center w-[60px] h-[60px] rounded-md border-2 cursor-pointer transition-colors',
+                          'hover:bg-accent hover:border-primary/50',
+                          isSelected
+                            ? 'border-primary bg-primary/10'
+                            : 'border-muted-foreground/30 bg-background',
+                          'peer-focus-visible:ring-2 peer-focus-visible:ring-ring'
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            'h-6 w-6',
+                            option.iconClass,
+                            isSelected ? 'text-primary' : 'text-muted-foreground'
+                          )}
+                        />
+                        {isSelected && (
+                          <Check className="absolute top-1 right-1 h-4 w-4 text-primary" />
+                        )}
+                      </Label>
                     </div>
-                    <div
-                      className={cn(
-                        'h-4 w-4 rounded-full border-2 flex items-center justify-center mt-1',
-                        'peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary',
-                        value.radius === option.value
-                          ? 'border-primary bg-primary'
-                          : 'border-muted-foreground'
-                      )}
-                    >
-                      {value.radius === option.value && (
-                        <Check className="h-2.5 w-2.5 text-primary-foreground" />
-                      )}
+                  </TooltipTrigger>
+                  <TooltipContent className="!z-[120]" sideOffset={5}>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">{option.label}</span>
+                      <span className="text-xs opacity-90">{option.description}</span>
                     </div>
-                  </Label>
-                </div>
+                  </TooltipContent>
+                </TooltipPrimitive.Root>
               )
             })}
           </div>
@@ -240,52 +238,51 @@ export function StyleSelector({
           value={value.shadow}
           onValueChange={(newValue) => updatePreset('shadow', newValue as ShadowPreset)}
         >
-          <div className="grid grid-cols-2 gap-3">
-            {shadowOptions.map((option) => (
-              <div key={option.value} className="relative">
-                <RadioGroupItem
-                  value={option.value}
-                  id={`shadow-${option.value}`}
-                  className="peer sr-only"
-                />
-                <Label
-                  htmlFor={`shadow-${option.value}`}
-                  className={cn(
-                    'flex flex-col items-center gap-3 rounded-lg border-2 p-4 cursor-pointer',
-                    'hover:bg-accent hover:border-primary/50 transition-colors',
-                    'peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-accent',
-                    'peer-focus-visible:ring-2 peer-focus-visible:ring-ring'
-                  )}
-                >
-                  {/* Mini aperçu visuel de l'ombre */}
-                  <div
-                    className={cn(
-                      'h-12 w-12 rounded-md bg-background border',
-                      option.previewClass
-                    )}
-                  />
-                  <div className="flex flex-col items-center gap-1">
-                    <span className="text-sm font-medium">{option.label}</span>
-                    <span className="text-xs text-muted-foreground text-center">
-                      {option.description}
-                    </span>
-                  </div>
-                  <div
-                    className={cn(
-                      'h-4 w-4 rounded-full border-2 flex items-center justify-center mt-1',
-                      'peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary',
-                      value.shadow === option.value
-                        ? 'border-primary bg-primary'
-                        : 'border-muted-foreground'
-                    )}
-                  >
-                    {value.shadow === option.value && (
-                      <Check className="h-2.5 w-2.5 text-primary-foreground" />
-                    )}
-                  </div>
-                </Label>
-              </div>
-            ))}
+          <div className="flex gap-3">
+            {shadowOptions.map((option) => {
+              const isSelected = value.shadow === option.value
+              return (
+                <TooltipPrimitive.Root key={option.value} delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <div className="relative">
+                      <RadioGroupItem
+                        value={option.value}
+                        id={`shadow-${option.value}`}
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor={`shadow-${option.value}`}
+                        className={cn(
+                          'flex items-center justify-center w-[60px] h-[60px] rounded-md border-2 cursor-pointer transition-colors',
+                          'hover:bg-accent hover:border-primary/50',
+                          isSelected
+                            ? 'border-primary bg-primary/10'
+                            : 'border-muted-foreground/30 bg-background',
+                          'peer-focus-visible:ring-2 peer-focus-visible:ring-ring'
+                        )}
+                      >
+                        {/* Mini aperçu visuel de l'ombre */}
+                        <div
+                          className={cn(
+                            'h-6 w-6 rounded-sm bg-foreground/10 border',
+                            option.previewClass
+                          )}
+                        />
+                        {isSelected && (
+                          <Check className="absolute top-1 right-1 h-4 w-4 text-primary" />
+                        )}
+                      </Label>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="!z-[120]" sideOffset={5}>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">{option.label}</span>
+                      <span className="text-xs opacity-90">{option.description}</span>
+                    </div>
+                  </TooltipContent>
+                </TooltipPrimitive.Root>
+              )
+            })}
           </div>
         </RadioGroup>
       </div>
@@ -297,54 +294,49 @@ export function StyleSelector({
           value={value.font}
           onValueChange={(newValue) => updatePreset('font', newValue as FontPreset)}
         >
-          <div className="grid grid-cols-3 gap-3">
+          <div className="flex gap-3">
             {fontOptions.map((option) => {
               const Icon = option.icon
+              const isSelected = value.font === option.value
               return (
-                <div key={option.value} className="relative">
-                  <RadioGroupItem
-                    value={option.value}
-                    id={`font-${option.value}`}
-                    className="peer sr-only"
-                  />
-                  <Label
-                    htmlFor={`font-${option.value}`}
-                    className={cn(
-                      'flex flex-col items-center gap-2 rounded-lg border-2 p-4 cursor-pointer',
-                      'hover:bg-accent hover:border-primary/50 transition-colors',
-                      'peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-accent',
-                      'peer-focus-visible:ring-2 peer-focus-visible:ring-ring'
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        'h-8 w-8',
-                        value.font === option.value
-                          ? 'text-primary'
-                          : 'text-muted-foreground'
-                      )}
-                    />
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-sm font-medium">{option.label}</span>
-                      <span className="text-xs text-muted-foreground text-center">
-                        {option.description}
-                      </span>
+                <TooltipPrimitive.Root key={option.value} delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <div className="relative">
+                      <RadioGroupItem
+                        value={option.value}
+                        id={`font-${option.value}`}
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor={`font-${option.value}`}
+                        className={cn(
+                          'flex items-center justify-center w-[60px] h-[60px] rounded-md border-2 cursor-pointer transition-colors',
+                          'hover:bg-accent hover:border-primary/50',
+                          isSelected
+                            ? 'border-primary bg-primary/10'
+                            : 'border-muted-foreground/30 bg-background',
+                          'peer-focus-visible:ring-2 peer-focus-visible:ring-ring'
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            'h-6 w-6',
+                            isSelected ? 'text-primary' : 'text-muted-foreground'
+                          )}
+                        />
+                        {isSelected && (
+                          <Check className="absolute top-1 right-1 h-4 w-4 text-primary" />
+                        )}
+                      </Label>
                     </div>
-                    <div
-                      className={cn(
-                        'h-4 w-4 rounded-full border-2 flex items-center justify-center mt-1',
-                        'peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary',
-                        value.font === option.value
-                          ? 'border-primary bg-primary'
-                          : 'border-muted-foreground'
-                      )}
-                    >
-                      {value.font === option.value && (
-                        <Check className="h-2.5 w-2.5 text-primary-foreground" />
-                      )}
+                  </TooltipTrigger>
+                  <TooltipContent className="!z-[120]" sideOffset={5}>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">{option.label}</span>
+                      <span className="text-xs opacity-90">{option.description}</span>
                     </div>
-                  </Label>
-                </div>
+                  </TooltipContent>
+                </TooltipPrimitive.Root>
               )
             })}
           </div>
@@ -358,60 +350,56 @@ export function StyleSelector({
           value={value.density}
           onValueChange={(newValue) => updatePreset('density', newValue as DensityPreset)}
         >
-          <div className="grid grid-cols-3 gap-3">
+          <div className="flex gap-3">
             {densityOptions.map((option) => {
               const Icon = option.icon
+              const isSelected = value.density === option.value
               return (
-                <div key={option.value} className="relative">
-                  <RadioGroupItem
-                    value={option.value}
-                    id={`density-${option.value}`}
-                    className="peer sr-only"
-                  />
-                  <Label
-                    htmlFor={`density-${option.value}`}
-                    className={cn(
-                      'flex flex-col items-center gap-2 rounded-lg border-2 p-4 cursor-pointer',
-                      'hover:bg-accent hover:border-primary/50 transition-colors',
-                      'peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-accent',
-                      'peer-focus-visible:ring-2 peer-focus-visible:ring-ring'
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        'h-8 w-8',
-                        value.density === option.value
-                          ? 'text-primary'
-                          : 'text-muted-foreground'
-                      )}
-                    />
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-sm font-medium">{option.label}</span>
-                      <span className="text-xs text-muted-foreground text-center">
-                        {option.description}
-                      </span>
+                <TooltipPrimitive.Root key={option.value} delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <div className="relative">
+                      <RadioGroupItem
+                        value={option.value}
+                        id={`density-${option.value}`}
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor={`density-${option.value}`}
+                        className={cn(
+                          'flex items-center justify-center w-[60px] h-[60px] rounded-md border-2 cursor-pointer transition-colors',
+                          'hover:bg-accent hover:border-primary/50',
+                          isSelected
+                            ? 'border-primary bg-primary/10'
+                            : 'border-muted-foreground/30 bg-background',
+                          'peer-focus-visible:ring-2 peer-focus-visible:ring-ring'
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            'h-6 w-6',
+                            isSelected ? 'text-primary' : 'text-muted-foreground'
+                          )}
+                        />
+                        {isSelected && (
+                          <Check className="absolute top-1 right-1 h-4 w-4 text-primary" />
+                        )}
+                      </Label>
                     </div>
-                    <div
-                      className={cn(
-                        'h-4 w-4 rounded-full border-2 flex items-center justify-center mt-1',
-                        'peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary',
-                        value.density === option.value
-                          ? 'border-primary bg-primary'
-                          : 'border-muted-foreground'
-                      )}
-                    >
-                      {value.density === option.value && (
-                        <Check className="h-2.5 w-2.5 text-primary-foreground" />
-                      )}
+                  </TooltipTrigger>
+                  <TooltipContent className="!z-[120]" sideOffset={5}>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">{option.label}</span>
+                      <span className="text-xs opacity-90">{option.description}</span>
                     </div>
-                  </Label>
-                </div>
+                  </TooltipContent>
+                </TooltipPrimitive.Root>
               )
             })}
           </div>
         </RadioGroup>
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }
 
