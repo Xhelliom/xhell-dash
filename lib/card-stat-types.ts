@@ -1,26 +1,51 @@
 /**
  * Registre des types de statistiques de carte disponibles
  * 
- * Ce fichier définit les types de stats de carte disponibles pour chaque template.
- * Les types communs ('number', 'chart') sont disponibles pour tous les templates.
- * Les types spécifiques sont enregistrés par template.
+ * Ce fichier est maintenant un wrapper qui récupère les types depuis
+ * le registre de cartes. Il maintient la compatibilité avec l'ancien code
+ * tout en utilisant le nouveau système modulaire.
+ * 
+ * Les types sont maintenant définis dans les cartes individuelles
+ * (ex: cards/plex/index.ts) et chargés automatiquement.
  */
+
+// Importer toutes les cartes pour qu'elles s'enregistrent
+// Cela garantit que le registre est peuplé avant d'utiliser les types
+import '@/cards'
+
+import { cardRegistry } from './card-registry'
 
 /**
  * Types de statistiques de carte communs disponibles pour tous les templates
+ * 
+ * Ces types sont toujours disponibles, indépendamment des cartes
  */
 export const COMMON_CARD_STAT_TYPES = ['number', 'chart'] as const
 
 /**
  * Types de statistiques de carte spécifiques par template
- * Chaque template peut définir ses propres types personnalisés
+ * 
+ * Récupère dynamiquement depuis le registre de cartes
+ * Pour la compatibilité, on construit un objet à partir des cartes enregistrées
  */
-export const TEMPLATE_CARD_STAT_TYPES: Record<string, readonly string[]> = {
-  plex: ['plex-recent'] as const,
-  // Ajouter d'autres templates ici :
-  // sonarr: ['sonarr-queue', 'sonarr-calendar'] as const,
-  // radarr: ['radarr-queue'] as const,
-}
+export const TEMPLATE_CARD_STAT_TYPES: Record<string, readonly string[]> = (() => {
+  const types: Record<string, readonly string[]> = {}
+  const allCards = cardRegistry.getAll()
+  
+  for (const card of allCards) {
+    if (card.cardStatTypes && card.cardStatTypes.length > 0) {
+      // Filtrer les types communs pour ne garder que les types spécifiques
+      const specificTypes = card.cardStatTypes.filter(
+        (type) => !COMMON_CARD_STAT_TYPES.includes(type as any)
+      )
+      if (specificTypes.length > 0) {
+        types[card.id] = specificTypes as readonly string[]
+      }
+    }
+  }
+  
+  return types
+})()
 
 /**
  * Interface pour le registre de types de stats de carte
@@ -39,18 +64,18 @@ export interface CardStatTypeRegistry {
 /**
  * Récupère tous les types de stats de carte disponibles pour un template donné
  * 
+ * Utilise le registre de cartes pour récupérer les types dynamiquement
+ * 
  * @param templateId - ID du template (ex: 'plex', 'sonarr') ou undefined pour les types communs uniquement
  * @returns Liste des types disponibles (communs + spécifiques au template)
  */
 export function getCardStatTypes(templateId?: string): string[] {
-  const common = [...COMMON_CARD_STAT_TYPES]
-  
   if (!templateId) {
-    return common
+    return [...COMMON_CARD_STAT_TYPES]
   }
   
-  const templateSpecific = TEMPLATE_CARD_STAT_TYPES[templateId] || []
-  return [...common, ...templateSpecific]
+  // Utiliser le registre de cartes pour récupérer les types
+  return cardRegistry.getCardStatTypes(templateId)
 }
 
 /**
@@ -67,6 +92,8 @@ export function isValidCardStatType(type: string, templateId?: string): boolean 
 
 /**
  * Récupère le registre complet des types de stats de carte
+ * 
+ * Construit le registre à partir du registre de cartes
  */
 export function getCardStatTypeRegistry(): CardStatTypeRegistry {
   return {

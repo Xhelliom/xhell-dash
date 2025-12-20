@@ -1,15 +1,27 @@
 /**
  * Templates de statistiques préconfigurés
  * 
- * Ce fichier définit les templates disponibles pour les statistiques
- * Chaque template peut être sélectionné dans le formulaire et pré-remplit les champs appropriés
+ * Ce fichier est maintenant un wrapper qui récupère les templates depuis
+ * le registre de cartes. Il maintient la compatibilité avec l'ancien code
+ * tout en utilisant le nouveau système modulaire.
+ * 
+ * Les templates sont maintenant définis dans les cartes individuelles
+ * (ex: cards/plex/index.ts) et chargés automatiquement.
  */
 
+// Importer toutes les cartes pour qu'elles s'enregistrent
+// Cela garantit que le registre est peuplé avant d'utiliser les templates
+import '@/cards'
+
+import { cardRegistry } from './card-registry'
 import type { StatsDisplayOptions } from './types'
 import { getCardStatTypes } from './card-stat-types'
 
 /**
  * Interface pour un template de statistiques
+ * 
+ * Cette interface est ré-exportée pour maintenir la compatibilité
+ * avec le code existant qui l'importe depuis ce fichier.
  */
 export interface StatsTemplate {
   id: string
@@ -24,50 +36,22 @@ export interface StatsTemplate {
 }
 
 /**
- * Template Plex
- */
-const plexTemplate: StatsTemplate = {
-  id: 'plex',
-  name: 'Plex',
-  description: 'Statistiques complètes pour Plex Media Server',
-  applyTemplate: (currentValues) => {
-    return {
-      ...currentValues,
-      name: currentValues.name || 'Plex',
-      logo: currentValues.logo || 'Plex',
-      logoType: currentValues.logoType || 'icon',
-      statLabel: currentValues.statLabel || 'Bibliothèque',
-    }
-  },
-  defaultDisplayOptions: {
-    showKPIs: true,
-    showLibraryChart: true,
-    showRecentMedia: true,
-    // Options spécifiques pour les KPI
-    kpiOptions: {
-      showMovies: true,
-      showShows: true,
-      showEpisodes: true,
-      showUsers: true,
-      showLibraries: true,
-    },
-  },
-  // Types de stats de carte disponibles pour Plex
-  cardStatTypes: getCardStatTypes('plex'),
-}
-
-/**
  * Liste de tous les templates disponibles
+ * 
+ * Récupère dynamiquement tous les templates depuis le registre de cartes
+ * Cela permet d'ajouter de nouvelles cartes sans modifier ce fichier
  */
-export const STATS_TEMPLATES: StatsTemplate[] = [
-  plexTemplate,
-  // Ajouter d'autres templates ici (Sonarr, Radarr, etc.)
-]
+export const STATS_TEMPLATES: StatsTemplate[] = cardRegistry.getTemplates()
 
 /**
  * Récupère un template par son ID
+ * 
+ * Utilise le registre de cartes pour trouver le template correspondant
+ * 
+ * @param id - ID du template à récupérer
+ * @returns Le template ou undefined si non trouvé
  */
 export function getTemplateById(id: string): StatsTemplate | undefined {
-  return STATS_TEMPLATES.find((t) => t.id === id)
+  return cardRegistry.getTemplate(id)
 }
 
