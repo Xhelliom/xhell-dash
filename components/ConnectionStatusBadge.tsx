@@ -110,14 +110,19 @@ export function ConnectionStatusBadge({ app, size = 'sm', className }: Connectio
   }
 
   const sizeStyles = {
-    sm: 'h-2 w-2 text-xs px-1.5 py-0.5',
-    md: 'h-2.5 w-2.5 text-sm px-2 py-1',
+    sm: 'text-xs px-2 py-1 min-h-[20px]',
+    md: 'text-sm px-3 py-1.5 min-h-[28px] shadow-sm',
+  }
+
+  const dotSizes = {
+    sm: 'h-2 w-2',
+    md: 'h-2.5 w-2.5',
   }
 
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors',
+        'inline-flex items-center gap-1.5 rounded-full border font-medium transition-colors',
         statusStyles[status],
         sizeStyles[size],
         isChecking && 'opacity-70',
@@ -127,14 +132,15 @@ export function ConnectionStatusBadge({ app, size = 'sm', className }: Connectio
     >
       <span
         className={cn(
-          'h-2 w-2 rounded-full',
+          'rounded-full flex-shrink-0',
+          dotSizes[size],
           status === 'online' && 'bg-green-500',
           status === 'pending' && 'bg-yellow-500 animate-pulse',
           status === 'offline' && 'bg-red-500',
           status === 'unknown' && 'bg-gray-500'
         )}
       />
-      {size === 'md' && <span>{statusLabels[status]}</span>}
+      {size === 'md' && <span className="whitespace-nowrap">{statusLabels[status]}</span>}
     </div>
   )
 }

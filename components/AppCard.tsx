@@ -98,7 +98,14 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
   const IconComponent = app.logoType === 'icon' ? getLucideIcon(app.logo) : null
 
   return (
-    <Card className="h-full transition-all hover:shadow-lg">
+    <Card className="h-full transition-all hover:shadow-lg relative">
+      {/* Badge de statut de connexion en haut à droite */}
+      {hasStatsTemplate && (
+        <div className="absolute top-3 right-3 z-10">
+          <ConnectionStatusBadge app={app} size="md" />
+        </div>
+      )}
+      
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Logo : icône ou image */}
@@ -117,13 +124,7 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-lg truncate">{app.name}</CardTitle>
-              {/* Badge de statut de connexion si l'app a un template de stats */}
-              {hasStatsTemplate && (
-                <ConnectionStatusBadge app={app} size="sm" />
-              )}
-            </div>
+            <CardTitle className="text-lg truncate">{app.name}</CardTitle>
           </div>
         </div>
 

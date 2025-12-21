@@ -34,35 +34,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Mot de passe", type: "password" },
       },
       async authorize(credentials) {
-        // On s'assure qu'un admin par défaut existe si nécessaire
-        await ensureDefaultAdmin()
+        try {
+          // On s'assure qu'un admin par défaut existe si nécessaire
+          await ensureDefaultAdmin()
 
-        const email = credentials?.email
-        const password = credentials?.password
+          const email = credentials?.email
+          const password = credentials?.password
 
-        // Vérification que les credentials sont présents et de type string
-        if (!email || !password || typeof email !== "string" || typeof password !== "string") {
+          // Vérification que les credentials sont présents et de type string
+          if (!email || !password || typeof email !== "string" || typeof password !== "string") {
+            console.log("[AUTH] Credentials invalides : email ou password manquant ou invalide")
+            return null
+          }
+
+          // Recherche de l'utilisateur dans la base via Prisma
+          const user = await findUserByEmail(email)
+          if (!user) {
+            console.log(`[AUTH] Utilisateur non trouvé : ${email}`)
+            return null
+          }
+
+          // Vérification du mot de passe à partir du hash stocké
+          const isValid = await verifyPassword(password, user)
+          if (!isValid) {
+            console.log(`[AUTH] Mot de passe incorrect pour : ${email}`)
+            return null
+          }
+
+          console.log(`[AUTH] Connexion réussie pour : ${email} (${user.role})`)
+
+          // L'objet retourné sera stocké dans le token / la session
+          return {
+            id: user.id,
+            name: user.email,
+            email: user.email,
+            role: user.role,
+          }
+        } catch (error) {
+          console.error("[AUTH] Erreur lors de l'authentification:", error)
           return null
-        }
-
-        // Recherche de l'utilisateur dans la base via Prisma
-        const user = await findUserByEmail(email)
-        if (!user) {
-          return null
-        }
-
-        // Vérification du mot de passe à partir du hash stocké
-        const isValid = await verifyPassword(password, user)
-        if (!isValid) {
-          return null
-        }
-
-        // L'objet retourné sera stocké dans le token / la session
-        return {
-          id: user.id,
-          name: user.email,
-          email: user.email,
-          role: user.role,
         }
       },
     }),
