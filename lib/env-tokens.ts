@@ -104,10 +104,16 @@ const TOKEN_FIELD_NAMES = [
   'lidarrApiKey',
   'truenasApiKey',
   'homeassistantApiKey',
+  'homeAssistantApiKey',
   'proxmoxApiKey',
+  'proxmoxToken',
   'kubernetesToken',
+  'uptimeKumaApiKey',
+  'overseerrApiKey',
   'password',
+  'username',
   'secret',
+  'kubeconfig',
 ]
 
 /**

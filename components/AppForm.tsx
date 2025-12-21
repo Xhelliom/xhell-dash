@@ -31,6 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import type { App, CreateAppInput, StatsDisplayOptions, PlexKPIOptions, CardStatType } from '@/lib/types'
 import { getTemplateById } from '@/lib/stats-templates'
 import { cardRegistry } from '@/lib/card-registry'
+import { TemplateSpecificForm } from '@/components/config/TemplateSpecificForm'
 // Importer les cartes pour qu'elles s'enregistrent
 import '@/cards'
 
@@ -99,9 +100,11 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
   const [logo, setLogo] = useState('')
   const [statApiUrl, setStatApiUrl] = useState('')
   const [statLabel, setStatLabel] = useState('')
-  const [plexToken, setPlexToken] = useState('')
-  const [plexServerUrl, setPlexServerUrl] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // État générique pour stocker toutes les valeurs de configuration spécifiques au template
+  // (apiKey, token, username, password, kubeconfig, etc.)
+  const [templateSpecificData, setTemplateSpecificData] = useState<Record<string, any>>({})
 
   // État pour le template de stats sélectionné
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
@@ -131,8 +134,6 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
 
   // Récupérer le template sélectionné
   const selectedTemplate = selectedTemplateId ? getTemplateById(selectedTemplateId) : null
-  // Vérifier si le template Plex est sélectionné pour afficher les champs spécifiques
-  const isPlex = selectedTemplateId === 'plex'
 
   // Options de clés disponibles selon le template
   // Récupère dynamiquement depuis le registre de cartes
@@ -178,8 +179,20 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
         setLogo(app.logo || '')
         setStatApiUrl(app.statApiUrl || '')
         setStatLabel(app.statLabel || '')
-        setPlexToken((app as any).plexToken || '')
-        setPlexServerUrl((app as any).plexServerUrl || app.url)
+        // Charger toutes les données spécifiques au template depuis l'app
+        // (apiKey, token, username, password, plexToken, etc.)
+        const specificData: Record<string, any> = {}
+        // Récupérer tous les champs potentiels de configuration
+        const possibleFields = ['apiKey', 'token', 'username', 'password', 'plexToken', 'plexServerUrl', 
+          'sonarrApiKey', 'radarrApiKey', 'lidarrApiKey', 'truenasApiKey', 'homeAssistantApiKey',
+          'proxmoxToken', 'proxmoxPassword', 'kubernetesToken', 'kubeconfig', 
+          'uptimeKumaApiKey', 'overseerrApiKey']
+        possibleFields.forEach(field => {
+          if ((app as any)[field] !== undefined) {
+            specificData[field] = (app as any)[field]
+          }
+        })
+        setTemplateSpecificData(specificData)
         // Charger le template et les options d'affichage
         // Définir selectedTemplateId après avoir chargé les templates
         const templateId = app.statsConfig?.templateId || ''
@@ -217,8 +230,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
         setLogo('')
         setStatApiUrl('')
         setStatLabel('')
-        setPlexToken('')
-        setPlexServerUrl('')
+        setTemplateSpecificData({})
         setSelectedTemplateId('')
         setDisplayOptions({
           showKPIs: true,
@@ -291,21 +303,9 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
         return false
       }
     }
-    // Validation spécifique pour Plex
-    if (isPlex) {
-      if (!plexToken.trim()) {
-        alert('Le token Plex est obligatoire pour les applications Plex')
-        return false
-      }
-      if (plexServerUrl && plexServerUrl.trim()) {
-        try {
-          new URL(plexServerUrl)
-        } catch {
-          alert('L\'URL du serveur Plex n\'est pas valide')
-          return false
-        }
-      }
-    }
+    // Validation spécifique selon le template
+    // Les validations spécifiques sont gérées par TemplateSpecificForm avec l'attribut required
+    // Ici on peut ajouter des validations supplémentaires si nécessaire
     return true
   }
 
@@ -316,9 +316,13 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
     // Si la valeur est undefined ou vide, réinitialiser
     if (!templateId || templateId === 'none') {
       setSelectedTemplateId('')
+      setTemplateSpecificData({}) // Réinitialiser les données spécifiques
       return
     }
 
+    // Réinitialiser les données spécifiques quand on change de template
+    // pour éviter de garder les données du template précédent
+    setTemplateSpecificData({})
     setSelectedTemplateId(templateId)
 
     const template = getTemplateById(templateId)
@@ -391,8 +395,13 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
         logo: logo.trim(),
         statApiUrl: statApiUrl.trim() || undefined,
         statLabel: statLabel.trim() || undefined,
-        plexToken: isPlex ? plexToken.trim() || undefined : undefined,
-        plexServerUrl: isPlex && plexServerUrl.trim() ? plexServerUrl.trim() : undefined,
+        // Inclure toutes les données spécifiques au template
+        ...Object.fromEntries(
+          Object.entries(templateSpecificData).map(([key, value]) => [
+            key,
+            typeof value === 'string' ? value.trim() || undefined : value
+          ]).filter(([_, value]) => value !== undefined && value !== '')
+        ),
         statsConfig: selectedTemplateId || cardStatType ? {
           templateId: selectedTemplateId || undefined,
           displayOptions: selectedTemplateId ? displayOptions : undefined,
@@ -455,13 +464,16 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
               value={selectedTemplateId || undefined} 
               onValueChange={handleTemplateChange}
             >
-              <SelectTrigger id="statsTemplate">
-                <SelectValue placeholder="Aucun template" />
+              <SelectTrigger id="statsTemplate" className="w-full">
+                <SelectValue placeholder="Aucun template">
+                  {selectedTemplate?.name || ''}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {availableTemplates.map((template) => (
                   <SelectItem key={template.id} value={template.id}>
-                    {template.name} - {template.description}
+                    <span className="font-medium">{template.name}</span>
+                    <span className="text-muted-foreground"> - {template.description}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -759,45 +771,24 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
             </div>
           )}
 
-          {/* Champs spécifiques pour Plex */}
-          {isPlex && (
-            <>
-              <div className="border-t pt-4 mt-4">
-                <h3 className="text-sm font-semibold mb-3">Configuration Plex</h3>
-
-                {/* URL du serveur Plex */}
-                <div className="space-y-2 mb-4">
-                  <Label htmlFor="plexServerUrl">URL du serveur Plex (optionnel)</Label>
-                  <Input
-                    id="plexServerUrl"
-                    type="url"
-                    value={plexServerUrl}
-                    onChange={(e) => setPlexServerUrl(e.target.value)}
-                    placeholder={url || "http://localhost:32400"}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Par défaut, l'URL de l'application sera utilisée. Spécifiez une URL différente si nécessaire.
-                  </p>
-                </div>
-
-                {/* Token Plex */}
-                <div className="space-y-2">
-                  <Label htmlFor="plexToken">Token Plex *</Label>
-                  <Input
-                    id="plexToken"
-                    type="password"
-                    value={plexToken}
-                    onChange={(e) => setPlexToken(e.target.value)}
-                    placeholder="Votre token d'authentification Plex"
-                    required={isPlex}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Le token Plex est nécessaire pour récupérer les statistiques détaillées.
-                    Vous pouvez le trouver dans les paramètres de votre serveur Plex.
-                  </p>
-                </div>
-              </div>
-            </>
+          {/* Formulaire spécifique au template sélectionné */}
+          {selectedTemplateId && (
+            <div className="border-t pt-4 mt-4">
+              <TemplateSpecificForm
+                app={{
+                  ...(app || {}),
+                  ...templateSpecificData,
+                  url: url,
+                } as App}
+                templateId={selectedTemplateId}
+                onChange={(data) => {
+                  setTemplateSpecificData(prev => ({
+                    ...prev,
+                    ...data
+                  }))
+                }}
+              />
+            </div>
           )}
         </form>
       </div>

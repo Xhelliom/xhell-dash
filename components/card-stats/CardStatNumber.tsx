@@ -30,7 +30,10 @@ export function CardStatNumber({ app, config }: CardStatNumberProps) {
   const refreshInterval = app.statsConfig?.refreshInterval || 600000
 
   useEffect(() => {
-    if (!config.key) return
+    // Vérifier que la clé de configuration est présente
+    if (!config.key || typeof config.key !== 'string' || config.key.trim() === '') {
+      return
+    }
 
     const templateId = app.statsConfig?.templateId
     const cacheKey = getCacheKey(app.id, templateId, config.key)
@@ -76,13 +79,31 @@ export function CardStatNumber({ app, config }: CardStatNumberProps) {
           // Mettre en cache les données complètes avec TTL de 5 minutes
           setCachedData(cacheKey, data, 300000)
         } else {
-          // Gérer les erreurs HTTP
-          const error = new Error(`HTTP ${response.status}`)
-          const structuredError = createStructuredError(error, response)
+          // Essayer d'extraire le message d'erreur depuis le body de la réponse
+          let errorMessage = `HTTP ${response.status}`
+          let errorHint: string | undefined
+          try {
+            const errorData = await response.json().catch(() => ({}))
+            if (errorData.error) {
+              errorMessage = errorData.error
+            }
+            if (errorData.hint) {
+              errorHint = errorData.hint
+            }
+          } catch {
+            // Si le parsing JSON échoue, utiliser le message par défaut
+          }
+          
+          // Gérer les erreurs HTTP avec le message extrait
+          const error = new Error(errorMessage)
+          const structuredError = createStructuredError(error, response, errorHint)
           
           // Si l'erreur est récupérable, garder les données en cache
           if (!isRecoverableError(structuredError)) {
             console.error('Erreur non récupérable:', structuredError.message)
+            if (structuredError.hint) {
+              console.error('Conseil:', structuredError.hint)
+            }
           }
         }
       } catch (error) {

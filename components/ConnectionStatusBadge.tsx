@@ -32,6 +32,71 @@ interface ConnectionStatusBadgeProps {
 }
 
 /**
+ * Récupère le timestamp le plus récent parmi toutes les clés de cache pour une app
+ * 
+ * @param appId - ID de l'application
+ * @param templateId - ID du template
+ * @returns Timestamp le plus récent, ou null si aucune donnée trouvée
+ */
+function getLatestCacheTimestamp(appId: string, templateId: string): number | null {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return null
+    }
+
+    // Préfixe pour les clés avec templateId et key spécifique (se termine par _)
+    const prefixWithKey = `xhell_dash_cache_${appId}_${templateId}_`
+    // Clé exacte pour les clés avec seulement templateId (sans key supplémentaire)
+    const exactKey = `xhell_dash_cache_${appId}_${templateId}`
+    
+    let latestTimestamp: number | null = null
+
+    // Parcourir toutes les clés de localStorage
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i)
+      if (!key || !key.startsWith('xhell_dash_cache_')) {
+        continue
+      }
+
+      // Vérifier si cette clé correspond à notre app et template
+      // Soit elle commence par appId_templateId_ (avec une key), soit elle est exactement appId_templateId
+      const isMatchingKey = key.startsWith(prefixWithKey) || key === exactKey
+      
+      if (isMatchingKey) {
+        try {
+          const cached = window.localStorage.getItem(key)
+          if (cached) {
+            const entry = JSON.parse(cached)
+            // Vérifier que les données ont un timestamp
+            if (entry.timestamp) {
+              const now = Date.now()
+              const age = now - entry.timestamp
+              const ttl = entry.ttl || 300000 // TTL par défaut de 5 minutes
+              
+              // Accepter les données si elles ne sont pas expirées OU si elles sont récentes (< 20 minutes)
+              // Même si expirées, on les considère pour déterminer le statut de connexion
+              if (age <= ttl || age < 1200000) {
+                if (latestTimestamp === null || entry.timestamp > latestTimestamp) {
+                  latestTimestamp = entry.timestamp
+                }
+              }
+            }
+          }
+        } catch {
+          // Ignorer les clés corrompues
+          continue
+        }
+      }
+    }
+
+    return latestTimestamp
+  } catch (error) {
+    console.warn('Erreur lors de la recherche du cache:', error)
+    return null
+  }
+}
+
+/**
  * Détermine le statut de connexion d'une application
  * 
  * @param app - Application à vérifier
@@ -39,8 +104,9 @@ interface ConnectionStatusBadgeProps {
  */
 function getConnectionStatus(app: App): ConnectionStatus {
   const templateId = app.statsConfig?.templateId || 'generic'
-  const cacheKey = getCacheKey(app.id, templateId)
-  const lastUpdate = getCacheTimestamp(cacheKey)
+  
+  // Chercher le timestamp le plus récent parmi toutes les clés de cache pour cette app
+  const lastUpdate = getLatestCacheTimestamp(app.id, templateId)
 
   if (!lastUpdate) {
     return 'unknown'
@@ -65,8 +131,8 @@ function getConnectionStatus(app: App): ConnectionStatus {
     return 'offline'
   }
 
-  // Sinon, statut inconnu
-  return 'unknown'
+  // Entre 5 et 15 minutes, considérer comme en ligne (transition)
+  return 'online'
 }
 
 /**

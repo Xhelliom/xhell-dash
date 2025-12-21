@@ -67,7 +67,161 @@ Dans chaque fichier, remplacez :
 - Adaptez le template selon vos besoins
 - Enregistrez tous vos composants dans `cardStatComponents` si nécessaire
 
-### 5. Enregistrer la carte
+### 5. Ajouter les champs de configuration
+
+**IMPORTANT** : Pour que les utilisateurs puissent configurer les clés API, tokens ou autres informations d'authentification, vous devez ajouter les champs dans le formulaire de configuration.
+
+Modifiez le fichier `components/config/TemplateSpecificForm.tsx` :
+
+1. **Ajoutez une condition pour votre template** dans la fonction `TemplateSpecificForm`
+2. **Créez les champs de formulaire** nécessaires (clé API, token, username/password, etc.)
+3. **Utilisez le type `password`** pour les champs sensibles (clés API, tokens, mots de passe)
+
+#### Exemple : Ajouter la configuration pour Sonarr
+
+```typescript
+// Dans components/config/TemplateSpecificForm.tsx
+
+// Configuration pour Sonarr (utilise X-Api-Key)
+if (templateId === 'sonarr') {
+  const apiKey = (app as any)?.apiKey || (app as any)?.sonarrApiKey || ''
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Configuration Sonarr</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Configurez les paramètres spécifiques à Sonarr
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="sonarrApiKey">Clé API *</Label>
+          <Input
+            id="sonarrApiKey"
+            type="password"
+            value={apiKey}
+            onChange={(e) => handleChange('apiKey' as keyof CreateAppInput, e.target.value)}
+            placeholder="Votre clé API Sonarr"
+            required
+          />
+          <p className="text-xs text-muted-foreground">
+            La clé API est nécessaire pour récupérer les statistiques.
+            Vous pouvez la trouver dans les paramètres de votre instance Sonarr (Settings → General → Security).
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+#### Exemple : Configuration avec plusieurs options (TrueNAS)
+
+Si votre service supporte plusieurs méthodes d'authentification :
+
+```typescript
+// Configuration pour TrueNAS (API key ou username/password)
+if (templateId === 'truenas') {
+  const apiKey = (app as any)?.apiKey || (app as any)?.truenasApiKey || ''
+  const username = (app as any)?.username || ''
+  const password = (app as any)?.password || ''
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Configuration TrueNAS</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Configurez les paramètres d'authentification TrueNAS
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="truenasApiKey">Clé API (optionnel)</Label>
+          <Input
+            id="truenasApiKey"
+            type="password"
+            value={apiKey}
+            onChange={(e) => handleChange('apiKey' as keyof CreateAppInput, e.target.value)}
+            placeholder="Votre clé API TrueNAS"
+          />
+          <p className="text-xs text-muted-foreground">
+            Vous pouvez utiliser une clé API ou un nom d'utilisateur/mot de passe.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="truenasUsername">Nom d'utilisateur (si pas de clé API)</Label>
+          <Input
+            id="truenasUsername"
+            type="text"
+            value={username}
+            onChange={(e) => handleChange('username' as keyof CreateAppInput, e.target.value)}
+            placeholder="admin"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="truenasPassword">Mot de passe (si pas de clé API)</Label>
+          <Input
+            id="truenasPassword"
+            type="password"
+            value={password}
+            onChange={(e) => handleChange('password' as keyof CreateAppInput, e.target.value)}
+            placeholder="Votre mot de passe"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+#### Noms de champs recommandés
+
+Pour que les champs soient automatiquement reconnus comme sensibles et chiffrés :
+
+- **Clé API** : Utilisez `apiKey` comme nom principal (ou `{service}ApiKey` comme variante)
+- **Token** : Utilisez `token` (ou `{service}Token`)
+- **Mot de passe** : Utilisez `password`
+- **Nom d'utilisateur** : Utilisez `username`
+
+Ces noms sont automatiquement reconnus par le système de chiffrement et de masquage.
+
+#### Support des variables d'environnement
+
+Les utilisateurs peuvent utiliser des variables d'environnement dans les champs de configuration :
+
+- Valeur directe : `"votre-clé-api"`
+- Variable d'environnement : `"${SONARR_API_KEY}"`
+- Avec valeur par défaut : `"${SONARR_API_KEY:default-key}"`
+
+Les variables sont automatiquement résolues lors de la lecture des applications.
+
+#### Récupération dans route.ts
+
+Dans votre fichier `route.ts`, récupérez les valeurs configurées :
+
+```typescript
+// Récupérer les informations de connexion depuis l'app
+const apiUrl = app.url?.replace(/\/$/, '') || ''
+const apiKey = (app as any).apiKey || (app as any).sonarrApiKey
+
+if (!apiKey) {
+  return NextResponse.json(
+    { 
+      error: 'Clé API non configurée. Veuillez configurer la clé API dans les paramètres de l\'application.',
+    },
+    { status: 400 }
+  )
+}
+```
+
+**Note** : Les valeurs sont automatiquement déchiffrées et les variables d'environnement sont résolues par `readApps()`, vous n'avez pas besoin de le faire manuellement.
+
+### 6. Enregistrer la carte
 
 Ajoutez un import dans `cards/index.ts` :
 
@@ -75,11 +229,13 @@ Ajoutez un import dans `cards/index.ts` :
 import './sonarr'
 ```
 
-### 6. Tester
+### 7. Tester
 
 1. Redémarrez le serveur de développement
 2. Créez une nouvelle application avec votre template
-3. Vérifiez que les statistiques s'affichent correctement
+3. Vérifiez que les champs de configuration apparaissent dans le formulaire
+4. Configurez les clés API/tokens nécessaires
+5. Vérifiez que les statistiques s'affichent correctement
 
 ## Exemple : Carte Sonarr
 
@@ -101,6 +257,9 @@ Voici un exemple rapide pour créer une carte Sonarr :
 - Tous les fichiers sont optionnels sauf `index.ts` (mais recommandés)
 - Les types `number` et `chart` sont toujours disponibles pour les stats de carte
 - Les types custom doivent être enregistrés dans `cardStatComponents`
+- **N'oubliez pas d'ajouter les champs de configuration** dans `TemplateSpecificForm.tsx` pour que les utilisateurs puissent configurer les clés API/tokens
+- Les champs sensibles (apiKey, token, password) sont automatiquement chiffrés et masqués dans l'interface
+- Les variables d'environnement sont automatiquement résolues (format : `${VAR_NAME}` ou `${VAR_NAME:default}`)
 
 ## Besoin d'aide ?
 

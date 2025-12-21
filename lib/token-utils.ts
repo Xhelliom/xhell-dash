@@ -54,8 +54,14 @@ const SENSITIVE_FIELD_NAMES = [
   'lidarrApiKey',
   'truenasApiKey',
   'homeassistantApiKey',
+  'homeAssistantApiKey',
   'proxmoxApiKey',
+  'proxmoxToken',
   'kubernetesToken',
+  'uptimeKumaApiKey',
+  'overseerrApiKey',
+  'username',
+  'kubeconfig',
 ]
 
 /**

@@ -114,13 +114,16 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
             value={templateId || undefined}
             onValueChange={handleTemplateChange}
           >
-            <SelectTrigger id="statsTemplate">
-              <SelectValue placeholder="Aucun template" />
+            <SelectTrigger id="statsTemplate" className="w-full">
+              <SelectValue placeholder="Aucun template">
+                {selectedTemplate?.name || ''}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {STATS_TEMPLATES.map((template) => (
                 <SelectItem key={template.id} value={template.id}>
-                  {template.name} - {template.description}
+                  <span className="font-medium">{template.name}</span>
+                  <span className="text-muted-foreground"> - {template.description}</span>
                 </SelectItem>
               ))}
             </SelectContent>

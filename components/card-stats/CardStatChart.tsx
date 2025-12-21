@@ -6,7 +6,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ChartContainer, ChartConfig } from '@/components/ui/chart'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { SkeletonChart } from '@/components/ui/skeleton'
@@ -27,6 +27,8 @@ export function CardStatChart({ app, config }: CardStatChartProps) {
   const [chartData, setChartData] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const shouldRetryRef = useRef(true)
 
   // Intervalle de rafraîchissement configurable (défaut : 10 minutes)
   const refreshInterval = app.statsConfig?.refreshInterval || 600000
@@ -35,7 +37,14 @@ export function CardStatChart({ app, config }: CardStatChartProps) {
   const historyPeriod = app.statsConfig?.historyPeriod || 7
 
   useEffect(() => {
-    if (!config.key || !templateId) return
+    // Réinitialiser shouldRetry quand les dépendances changent
+    shouldRetryRef.current = true
+    setError(null)
+    
+    // Vérifier que toutes les informations nécessaires sont présentes
+    if (!config.key || !templateId || typeof templateId !== 'string' || templateId.trim() === '') {
+      return
+    }
 
     const cacheKey = getCacheKey(app.id, templateId, config.key)
 
@@ -90,7 +99,11 @@ export function CardStatChart({ app, config }: CardStatChartProps) {
     }
 
     const fetchStats = async () => {
+      // Si on ne doit plus réessayer (erreur de configuration), ne rien faire
+      if (!shouldRetryRef.current) return
+      
       setIsLoading(true)
+      setError(null)
       try {
         const endpoint = `/api/apps/${app.id}/stats/${templateId}`
         // Utiliser le timeout adaptatif selon le type d'API
@@ -127,13 +140,42 @@ export function CardStatChart({ app, config }: CardStatChartProps) {
 
           // Mettre en cache avec TTL de 5 minutes
           setCachedData(cacheKey, data, 300000)
+          // Réinitialiser l'état d'erreur si la requête réussit
+          setError(null)
+          shouldRetryRef.current = true
         } else {
-          // Gérer les erreurs HTTP
-          const error = new Error(`HTTP ${response.status}`)
-          const structuredError = createStructuredError(error, response)
+          // Essayer d'extraire le message d'erreur depuis le body de la réponse
+          let errorMessage = `HTTP ${response.status}`
+          let errorHint: string | undefined
+          try {
+            const errorData = await response.json().catch(() => ({}))
+            if (errorData.error) {
+              errorMessage = errorData.error
+            }
+            if (errorData.hint) {
+              errorHint = errorData.hint
+            }
+          } catch {
+            // Si le parsing JSON échoue, utiliser le message par défaut
+          }
           
-          if (!isRecoverableError(structuredError)) {
+          // Gérer les erreurs HTTP avec le message extrait
+          const error = new Error(errorMessage)
+          const structuredError = createStructuredError(error, response, errorHint)
+          
+          // Si c'est une erreur 400 (configuration), arrêter les tentatives futures
+          if (response.status === 400) {
+            setError(errorMessage)
+            shouldRetryRef.current = false
+            console.error('Erreur de configuration:', errorMessage)
+            if (errorHint) {
+              console.error('Conseil:', errorHint)
+            }
+          } else if (!isRecoverableError(structuredError)) {
             console.error('Erreur non récupérable:', structuredError.message)
+            if (structuredError.hint) {
+              console.error('Conseil:', structuredError.hint)
+            }
           }
         }
       } catch (error) {
@@ -154,7 +196,12 @@ export function CardStatChart({ app, config }: CardStatChartProps) {
     fetchStats()
 
     // Rafraîchir selon l'intervalle configuré
-    const interval = setInterval(fetchStats, refreshInterval)
+    // L'intervalle sera vérifié dans fetchStats grâce à shouldRetryRef
+    const interval = setInterval(() => {
+      if (shouldRetryRef.current) {
+        fetchStats()
+      }
+    }, refreshInterval)
     return () => clearInterval(interval)
   }, [app.id, config.key, templateId, refreshInterval, historyPeriod])
 
@@ -172,6 +219,10 @@ export function CardStatChart({ app, config }: CardStatChartProps) {
       </div>
       {isLoading ? (
         <SkeletonChart />
+      ) : error ? (
+        <div className="h-24 flex items-center justify-center px-2">
+          <span className="text-xs text-muted-foreground text-center">{error}</span>
+        </div>
       ) : chartData.length > 0 ? (
         <ChartContainer
           config={{
