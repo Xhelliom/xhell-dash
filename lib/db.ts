@@ -202,7 +202,7 @@ export async function readConfig(): Promise<AppConfig> {
     
     // Migration: convertir spacing en density si présent
     let stylePreset = config.stylePreset || defaultStylePreset
-    if (stylePreset && 'spacing' in stylePreset && !('density' in stylePreset)) {
+    if (stylePreset && typeof stylePreset === 'object' && 'spacing' in stylePreset && !('density' in stylePreset)) {
       // Migration depuis l'ancienne structure (spacing -> density)
       const spacingToDensity: Record<string, 'compact' | 'normal' | 'comfortable'> = {
         'compact': 'compact',
@@ -212,9 +212,9 @@ export async function readConfig(): Promise<AppConfig> {
       const oldSpacing = (stylePreset as any).spacing as string
       const newDensity = spacingToDensity[oldSpacing] || 'normal'
       stylePreset = {
-        ...stylePreset,
+        ...(stylePreset as Record<string, any>),
         density: newDensity,
-      }
+      } as any
       // Supprimer l'ancienne propriété spacing
       delete (stylePreset as any).spacing
     }

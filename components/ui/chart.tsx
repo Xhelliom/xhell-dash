@@ -130,6 +130,25 @@ const ChartTooltip = ({
   labelKey,
   ...props
 }: ChartTooltipProps) => {
+  // Filtrer les props Recharts personnalisées qui ne sont pas des props HTML standard
+  const {
+    separator,
+    wrapperClassName,
+    contentStyle,
+    itemStyle,
+    cursor,
+    coordinate,
+    offset,
+    viewBox,
+    activeCoordinate,
+    allowEscapeViewBox,
+    animationBegin,
+    animationDuration,
+    animationEasing,
+    isAnimationActive,
+    filterNull,
+    ...htmlProps
+  } = props as any
   const tooltipLabel = React.useMemo(() => {
     if (hideLabel || !payload?.length) {
       return null
@@ -171,7 +190,7 @@ const ChartTooltip = ({
         "grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-md",
         className
       )}
-      {...props}
+      {...htmlProps}
     >
       {tooltipLabel}
       <div className="grid gap-1.5">
@@ -256,7 +275,7 @@ const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
   ChartTooltipContentProps
 >(({ className, ...props }, ref) => (
-  <ChartTooltip ref={ref} className={className} {...props} />
+  <ChartTooltip className={className} {...props} />
 ))
 ChartTooltipContent.displayName = "ChartTooltip"
 

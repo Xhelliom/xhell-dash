@@ -467,8 +467,7 @@ export default function Home() {
     try {
       const response = await fetch('/api/auth/session')
       if (response.ok) {
-        const data = await response.json()
-        // @ts-expect-error - champ custom role
+        const data: any = await response.json()
         setUserRole(data?.user?.role || null)
       }
     } catch (error) {

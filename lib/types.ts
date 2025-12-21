@@ -191,6 +191,12 @@ export interface StatsConfig {
   displayOptions?: StatsDisplayOptions
   // Configuration de la statistique affichée sur la carte
   cardStat?: CardStatConfig
+  // Intervalle de rafraîchissement automatique en millisecondes (défaut : 600000 = 10 minutes)
+  refreshInterval?: number
+  // Timeout pour les requêtes API en millisecondes (défaut : 10000 = 10 secondes)
+  timeout?: number
+  // Période d'historique pour les graphiques en jours (défaut : 7 jours)
+  historyPeriod?: number
 }
 
 /**

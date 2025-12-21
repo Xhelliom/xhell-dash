@@ -95,12 +95,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
      */
     async session({ session, token }) {
       if (session.user) {
-        // @ts-expect-error - champ custom
-        session.user.id = (token as any).id
+        const user = session.user as any
+        const tokenData = token as any
+        user.id = tokenData.id
         session.user.name = token.name
         session.user.email = token.email ?? ""
-        // @ts-expect-error - champ custom
-        session.user.role = (token as any).role ?? "user"
+        user.role = tokenData.role ?? "user"
       }
       return session
     },

@@ -71,9 +71,14 @@ export async function GET(
     // Récupérer les données (on suppose que l'API retourne du JSON)
     const data: GenericStats = await response.json()
     
-    // Retourner les données telles quelles
-    // La structure des données dépend de l'API externe
-    return NextResponse.json(data, { status: 200 })
+    // Configurer le cache côté serveur (Next.js)
+    // Revalidation toutes les 5 minutes, mais permet stale-while-revalidate pendant 10 minutes
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
+    })
   } catch (error: any) {
     console.error('Erreur lors de la récupération des stats génériques:', error)
     

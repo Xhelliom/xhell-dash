@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { StatsPanel } from '@/components/StatsPanel'
 import { CardStatRenderer } from '@/components/card-stats/CardStatRenderer'
 import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
+import { ConnectionStatusBadge } from '@/components/ConnectionStatusBadge'
 import { normalizeCardStatConfig } from '@/lib/card-stat-utils'
 import type { App, CardStatType } from '@/lib/types'
 
@@ -99,9 +100,9 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
   return (
     <Card className="h-full transition-all hover:shadow-lg">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Logo : icône ou image */}
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted shrink-0">
             {app.logoType === 'icon' && IconComponent ? (
               <IconComponent className="h-8 w-8 text-primary" />
             ) : imageError ? (
@@ -115,7 +116,15 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
               />
             )}
           </div>
-          <CardTitle className="text-lg">{app.name}</CardTitle>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-lg truncate">{app.name}</CardTitle>
+              {/* Badge de statut de connexion si l'app a un template de stats */}
+              {hasStatsTemplate && (
+                <ConnectionStatusBadge app={app} size="sm" />
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Boutons d'action si activés */}

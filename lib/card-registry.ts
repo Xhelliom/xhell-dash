@@ -5,7 +5,8 @@
  * qui permet de charger et d'utiliser les cartes de manière dynamique.
  */
 
-import type { StatsTemplate, StatsDisplayOptions } from './types'
+import type { StatsTemplate } from './stats-templates'
+import type { StatsDisplayOptions } from './types'
 import type { NextRequest, NextResponse } from 'next/server'
 import type { ComponentType } from 'react'
 
