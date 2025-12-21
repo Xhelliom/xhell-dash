@@ -18,7 +18,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Film, Tv, Users, Library, Calendar, Loader2, RefreshCw } from 'lucide-react'
+import { Film, Tv, Users, Library, Calendar, Loader2, RefreshCw, Search } from 'lucide-react'
 import { SkeletonCard, SkeletonList } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import type { PlexStats, PlexRecentMedia } from './types'
@@ -34,6 +34,8 @@ import { useConnectivity } from '@/lib/connectivity'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { WifiOff, AlertTriangle } from 'lucide-react'
 import { storeMetrics } from '@/lib/metrics-storage'
+import { Pagination } from '@/components/ui/pagination'
+import { Input } from '@/components/ui/input'
 
 /**
  * Formate une date en format lisible (ex: "Il y a 2 jours")
@@ -79,6 +81,16 @@ export function PlexStatsPanel({ open, onOpenChange, appId, appName }: StatsPane
     const [lastUpdated, setLastUpdated] = useState<number | null>(null)
     const [isRefreshing, setIsRefreshing] = useState(false)
     const connectivityStatus = useConnectivity() // Détection de connectivité
+    const [app, setApp] = useState<App | null>(null) // Stocker l'app pour accéder à statsConfig
+    
+    // États pour la pagination et la recherche des médias récents
+    const [searchQuery, setSearchQuery] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    
+    // Réinitialiser la page quand la recherche change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchQuery])
 
     /**
      * Fonction pour récupérer les statistiques depuis l'API
@@ -136,6 +148,9 @@ export function PlexStatsPanel({ open, onOpenChange, appId, appName }: StatsPane
                 app = apps.find((a) => a.id === appId)
 
                 if (app) {
+                    // Stocker l'app pour l'utiliser dans le rendu
+                    setApp(app)
+                    
                     // Récupérer le templateId
                     appTemplateId = app.statsConfig?.templateId || 'plex'
                     
@@ -456,17 +471,60 @@ export function PlexStatsPanel({ open, onOpenChange, appId, appName }: StatsPane
                             )}
 
                             {/* Derniers médias ajoutés - Affichage conditionnel */}
-                            {displayOptions?.showRecentMedia !== false && stats.recentMedia && stats.recentMedia.length > 0 && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <Calendar className="h-5 w-5" />
-                                            Derniers médias ajoutés
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-3">
-                                            {stats.recentMedia.map((media, index) => (
+                            {displayOptions?.showRecentMedia !== false && stats.recentMedia && stats.recentMedia.length > 0 && (() => {
+                                // Filtrer les médias selon la recherche
+                                const filteredMedia = stats.recentMedia.filter(media => {
+                                    if (!searchQuery.trim()) return true
+                                    const query = searchQuery.toLowerCase()
+                                    return (
+                                        media.title.toLowerCase().includes(query) ||
+                                        media.library.toLowerCase().includes(query) ||
+                                        (media.year && media.year.toString().includes(query)) ||
+                                        (media.type === 'movie' ? 'film' : 'épisode').toLowerCase().includes(query)
+                                    )
+                                })
+                                
+                                // Pagination - utiliser itemsPerPage depuis statsConfig
+                                const itemsPerPage = app?.statsConfig?.itemsPerPage || 20
+                                const totalPages = Math.ceil(filteredMedia.length / itemsPerPage)
+                                const startIndex = (currentPage - 1) * itemsPerPage
+                                const endIndex = startIndex + itemsPerPage
+                                const paginatedMedia = filteredMedia.slice(startIndex, endIndex)
+                                
+                                return (
+                                    <Card>
+                                        <CardHeader>
+                                            <div className="flex items-center justify-between">
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <Calendar className="h-5 w-5" />
+                                                    Derniers médias ajoutés
+                                                    {filteredMedia.length !== stats.recentMedia.length && (
+                                                        <span className="text-sm font-normal text-muted-foreground">
+                                                            ({filteredMedia.length} résultat{filteredMedia.length > 1 ? 's' : ''})
+                                                        </span>
+                                                    )}
+                                                </CardTitle>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent>
+                                            {/* Champ de recherche */}
+                                            <div className="mb-4">
+                                                <div className="relative">
+                                                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                                    <Input
+                                                        type="search"
+                                                        placeholder="Rechercher par titre, bibliothèque, année..."
+                                                        value={searchQuery}
+                                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                                        className="pl-9"
+                                                    />
+                                                </div>
+                                            </div>
+                                            
+                                            {paginatedMedia.length > 0 ? (
+                                                <>
+                                                    <div className="space-y-3">
+                                                        {paginatedMedia.map((media, index) => (
                                                 <div
                                                     key={`${media.ratingKey}-${index}`}
                                                     className="flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
@@ -510,11 +568,31 @@ export function PlexStatsPanel({ open, onOpenChange, appId, appName }: StatsPane
                                                         </div>
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
+                                                        ))}
+                                                    </div>
+                                                    
+                                                    {/* Pagination */}
+                                                    {totalPages > 1 && (
+                                                        <div className="mt-4">
+                                                            <Pagination
+                                                                currentPage={currentPage}
+                                                                totalPages={totalPages}
+                                                                onPageChange={setCurrentPage}
+                                                                itemsPerPage={itemsPerPage}
+                                                                totalItems={filteredMedia.length}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <div className="py-8 text-center text-muted-foreground">
+                                                    <p>Aucun résultat trouvé pour "{searchQuery}"</p>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                )
+                            })()}
                         </div>
                     ) : null}
                 </div>

@@ -197,6 +197,8 @@ export interface StatsConfig {
   timeout?: number
   // Période d'historique pour les graphiques en jours (défaut : 7 jours)
   historyPeriod?: number
+  // Nombre d'éléments par page pour les listes (défaut : 20)
+  itemsPerPage?: number
 }
 
 /**
