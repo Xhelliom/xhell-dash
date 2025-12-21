@@ -14,6 +14,15 @@
 // IMPORTANT: Importer 'generic' en premier pour qu'elle apparaisse en premier dans la liste
 import './generic'
 import './plex'
+import './sonarr'
+import './radarr'
+import './lidarr'
+import './truenas'
+import './home-assistant'
+import './proxmox'
+import './kubernetes'
+import './uptime-kuma'
+import './overseerr'
 
 // Note: Les cartes s'enregistrent automatiquement lors de l'import
 // grâce à l'appel à cardRegistry.register() dans leur index.ts
