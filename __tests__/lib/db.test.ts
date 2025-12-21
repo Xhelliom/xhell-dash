@@ -44,16 +44,16 @@ describe('db', () => {
     // Mock des fonctions fs avec notre mock
     vi.mocked(fs.readFile).mockImplementation(async (filePath: any) => {
       return mockFs.readFile(filePath as string)
-    })
+    } as any)
     vi.mocked(fs.writeFile).mockImplementation(async (filePath: any, content: any) => {
       return mockFs.writeFile(filePath as string, content)
-    })
+    } as any)
     vi.mocked(fs.access).mockImplementation(async (filePath: any) => {
       return mockFs.access(filePath as string)
-    })
+    } as any)
     vi.mocked(fs.mkdir).mockImplementation(async () => {
       return mockFs.mkdir('')
-    })
+    } as any)
 
     // Mock de process.cwd() pour retourner un chemin de test
     vi.spyOn(process, 'cwd').mockReturnValue('/test')

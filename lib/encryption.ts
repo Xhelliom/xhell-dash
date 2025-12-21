@@ -12,6 +12,7 @@
  */
 
 import crypto from 'crypto'
+import { isSensitiveField } from './token-utils'
 
 /**
  * Algorithme de chiffrement utilisé
@@ -240,9 +241,6 @@ export function decryptValue(encryptedValue: string | undefined | null): string 
  * ```
  */
 export function encryptSensitiveFields<T extends Record<string, any>>(obj: T): T {
-  // Import synchronisé pour éviter les dépendances circulaires
-  const tokenUtils = require('./token-utils')
-  const isSensitiveField = tokenUtils.isSensitiveField
   const encrypted: any = { ...obj }
   
   for (const [key, value] of Object.entries(obj)) {
@@ -274,9 +272,6 @@ export function encryptSensitiveFields<T extends Record<string, any>>(obj: T): T
  * ```
  */
 export function decryptSensitiveFields<T extends Record<string, any>>(obj: T): T {
-  // Import synchronisé pour éviter les dépendances circulaires
-  const tokenUtils = require('./token-utils')
-  const isSensitiveField = tokenUtils.isSensitiveField
   const decrypted: any = { ...obj }
   
   for (const [key, value] of Object.entries(obj)) {

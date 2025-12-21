@@ -27,8 +27,18 @@ describe('cache-client', () => {
     // Créer un mock localStorage
     mockStorage = createMockLocalStorage()
 
-    // Remplacer global.localStorage par notre mock
+    // S'assurer que window est défini
+    if (typeof global.window === 'undefined') {
+      ;(global as any).window = {}
+    }
+
+    // Remplacer global.localStorage et window.localStorage par notre mock
     Object.defineProperty(global, 'localStorage', {
+      value: mockStorage,
+      writable: true,
+      configurable: true,
+    })
+    Object.defineProperty(global.window, 'localStorage', {
       value: mockStorage,
       writable: true,
       configurable: true,
@@ -43,6 +53,13 @@ describe('cache-client', () => {
         writable: true,
         configurable: true,
       })
+      if (global.window) {
+        Object.defineProperty(global.window, 'localStorage', {
+          value: originalLocalStorage,
+          writable: true,
+          configurable: true,
+        })
+      }
     }
     mockStorage.clear()
   })

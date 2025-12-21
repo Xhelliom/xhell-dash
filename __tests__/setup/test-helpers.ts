@@ -5,7 +5,7 @@
  * la création de données de test et les mocks
  */
 
-import type { App, Widget, AppConfig, User } from '@/lib/types'
+import type { App, Widget, AppConfig } from '@/lib/types'
 import type { StoredUser } from '@/lib/users'
 
 /**

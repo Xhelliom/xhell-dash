@@ -297,12 +297,13 @@ describe('API /api/users', () => {
         new Error('Impossible de supprimer le dernier administrateur')
       )
 
-      const request = createMockRequest('/api/users/admin-id', {
+      // Utiliser un ID différent pour éviter la vérification "propre compte"
+      const request = createMockRequest('/api/users/other-admin-id', {
         method: 'DELETE',
       })
 
       const response = await DELETE(request as any, {
-        params: Promise.resolve({ id: 'admin-id' }),
+        params: Promise.resolve({ id: 'other-admin-id' }),
       })
       const json = await response.json()
 
