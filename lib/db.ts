@@ -9,6 +9,8 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import type { App, Widget, AppConfig } from './types'
 import { defaultStylePreset } from './style-presets'
+import { encryptSensitiveFields, decryptSensitiveFields } from './encryption'
+import { resolveTokenFromEnv } from './env-tokens'
 
 // Chemin vers le fichier de données
 const DATA_DIR = path.join(process.cwd(), 'data')
@@ -38,8 +40,16 @@ export async function readApps(): Promise<App[]> {
       throw new Error('Les données doivent être un tableau')
     }
     
+    // Déchiffrer les champs sensibles et résoudre les variables d'environnement
+    const decryptedApps = apps.map(app => {
+      // Déchiffrer les tokens sensibles
+      const decrypted = decryptSensitiveFields(app)
+      // Résoudre les variables d'environnement pour les tokens
+      return resolveTokenFromEnv(decrypted)
+    })
+    
     // Trier les apps par ordre (si défini), sinon garder l'ordre d'origine
-    return apps.sort((a, b) => {
+    return decryptedApps.sort((a, b) => {
       // Si les deux ont un ordre, trier par ordre
       if (a.order !== undefined && b.order !== undefined) {
         return a.order - b.order
@@ -77,8 +87,11 @@ export async function writeApps(apps: App[]): Promise<void> {
     // Créer le dossier data s'il n'existe pas
     await fs.mkdir(DATA_DIR, { recursive: true })
     
+    // Chiffrer les champs sensibles avant de sauvegarder
+    const encryptedApps = apps.map(app => encryptSensitiveFields(app))
+    
     // Convertir en JSON avec indentation pour la lisibilité
-    const jsonContent = JSON.stringify(apps, null, 2)
+    const jsonContent = JSON.stringify(encryptedApps, null, 2)
     
     // Écrire dans le fichier
     await fs.writeFile(APPS_FILE, jsonContent, 'utf-8')

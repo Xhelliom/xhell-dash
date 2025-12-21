@@ -14,6 +14,7 @@ import { getCachedData, setCachedData, getCacheKey, getCacheTimestamp } from '@/
 import { formatRelativeTime } from '@/lib/date-utils'
 import { fetchWithRetry } from '@/lib/api-retry'
 import { createStructuredError, isRecoverableError } from '@/lib/error-handler'
+import { getTimeoutFromApp } from '@/lib/timeout-config'
 
 interface CardStatNumberProps {
   app: App
@@ -55,8 +56,8 @@ export function CardStatNumber({ app, config }: CardStatNumberProps) {
           ? `/api/apps/${app.id}/stats/${templateId}`
           : `/api/apps/${app.id}/stats`
         
-        // Utiliser fetchWithRetry pour réessayer automatiquement en cas d'erreur
-        const timeout = app.statsConfig?.timeout || 10000
+        // Utiliser le timeout adaptatif selon le type d'API
+        const timeout = getTimeoutFromApp(app)
         const response = await fetchWithRetry(endpoint, {
           signal: AbortSignal.timeout(timeout),
         }, {

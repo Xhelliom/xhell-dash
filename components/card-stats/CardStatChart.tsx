@@ -16,6 +16,7 @@ import { formatRelativeTime } from '@/lib/date-utils'
 import { fetchWithRetry } from '@/lib/api-retry'
 import { createStructuredError, isRecoverableError } from '@/lib/error-handler'
 import { storeMetric, getDailyAggregatedMetrics } from '@/lib/metrics-storage'
+import { getTimeoutFromApp } from '@/lib/timeout-config'
 
 interface CardStatChartProps {
   app: App
@@ -92,7 +93,8 @@ export function CardStatChart({ app, config }: CardStatChartProps) {
       setIsLoading(true)
       try {
         const endpoint = `/api/apps/${app.id}/stats/${templateId}`
-        const timeout = app.statsConfig?.timeout || 10000
+        // Utiliser le timeout adaptatif selon le type d'API
+        const timeout = getTimeoutFromApp(app)
         
         // Utiliser fetchWithRetry pour réessayer automatiquement en cas d'erreur
         const response = await fetchWithRetry(endpoint, {

@@ -36,6 +36,7 @@ import { WifiOff, AlertTriangle } from 'lucide-react'
 import { storeMetrics } from '@/lib/metrics-storage'
 import { Pagination } from '@/components/ui/pagination'
 import { Input } from '@/components/ui/input'
+import { getAdaptiveTimeout } from '@/lib/timeout-config'
 
 /**
  * Formate une date en format lisible (ex: "Il y a 2 jours")
@@ -141,7 +142,6 @@ export function PlexStatsPanel({ open, onOpenChange, appId, appName }: StatsPane
 
             const appResponse = await fetch(`/api/apps`)
             let app: App | undefined
-            let timeout = 10000 // Défaut : 10 secondes
             
             if (appResponse.ok) {
                 const apps: App[] = await appResponse.json()
@@ -154,11 +154,6 @@ export function PlexStatsPanel({ open, onOpenChange, appId, appName }: StatsPane
                     // Récupérer le templateId
                     appTemplateId = app.statsConfig?.templateId || 'plex'
                     
-                    // Récupérer le timeout configuré
-                    if (app.statsConfig?.timeout) {
-                        timeout = app.statsConfig.timeout
-                    }
-
                     if (app.statsConfig?.displayOptions) {
                         // Utiliser les options d'affichage de l'app
                         setDisplayOptions(app.statsConfig.displayOptions)
@@ -185,6 +180,9 @@ export function PlexStatsPanel({ open, onOpenChange, appId, appName }: StatsPane
                     }
                 }
             }
+            
+            // Utiliser le timeout adaptatif selon le type d'API
+            const timeout = getAdaptiveTimeout(appTemplateId, app?.statsConfig?.timeout)
 
             // Récupérer les statistiques depuis l'API spécialisée selon le templateId
             // Utiliser fetchWithRetry pour réessayer automatiquement en cas d'erreur

@@ -32,6 +32,7 @@ import { useConnectivity } from '@/lib/connectivity'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { WifiOff, AlertTriangle } from 'lucide-react'
 import { storeMetrics } from '@/lib/metrics-storage'
+import { getAdaptiveTimeout } from '@/lib/timeout-config'
 
 /**
  * Composant du panneau de statistiques génériques
@@ -95,19 +96,14 @@ export function GenericStatsPanel({ open, onOpenChange, appId, appName }: StatsP
             // Récupérer l'app pour avoir accès aux options d'affichage
             const appResponse = await fetch(`/api/apps`)
             let app: App | undefined
-            let timeout = 10000 // Défaut : 10 secondes
+            let templateId = 'generic'
             
             if (appResponse.ok) {
                 const apps: App[] = await appResponse.json()
                 app = apps.find((a) => a.id === appId)
 
                 if (app) {
-                    const templateId = app.statsConfig?.templateId || 'generic'
-                    
-                    // Récupérer le timeout configuré
-                    if (app.statsConfig?.timeout) {
-                        timeout = app.statsConfig.timeout
-                    }
+                    templateId = app.statsConfig?.templateId || 'generic'
 
                     if (app.statsConfig?.displayOptions) {
                         // Utiliser les options d'affichage de l'app
@@ -126,6 +122,9 @@ export function GenericStatsPanel({ open, onOpenChange, appId, appName }: StatsP
                     }
                 }
             }
+
+            // Utiliser le timeout adaptatif selon le type d'API
+            const timeout = getAdaptiveTimeout(templateId, app?.statsConfig?.timeout)
 
             // Récupérer les statistiques depuis l'API
             // Utiliser fetchWithRetry pour réessayer automatiquement en cas d'erreur
@@ -157,7 +156,7 @@ export function GenericStatsPanel({ open, onOpenChange, appId, appName }: StatsP
             setLastUpdated(now)
 
             // Stocker les métriques numériques dans l'historique pour les graphiques
-            const templateId = app?.statsConfig?.templateId || 'generic'
+            // templateId est déjà défini plus haut
             const metricsToStore: Array<{ appId: string; templateId: string; key: string; value: number; timestamp: number }> = []
             
             if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
