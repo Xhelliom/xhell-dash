@@ -585,7 +585,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                     setCardStatCustomType('')
                     setCardStatKey('')
                     setCardStatLabel('')
-                  } else if (value === 'number' || value === 'chart') {
+                  } else if (value === 'number' || value === 'chart' || value === 'info') {
                     // Types standards
                     setCardStatType(value as CardStatType)
                     setCardStatCustomType('')
@@ -626,8 +626,8 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
               </Select>
             </div>
 
-            {/* Clé de la statistique (si type = number ou chart, pas pour les types custom) */}
-            {cardStatType && (cardStatType === 'number' || cardStatType === 'chart') && (
+            {/* Clé de la statistique (si type = number ou chart ou info, pas pour les types custom) */}
+            {cardStatType && (cardStatType === 'number' || cardStatType === 'chart' || cardStatType === 'info') && (
               <div className="space-y-2">
                 <Label htmlFor="cardStatKey">Clé de la statistique</Label>
                 <Select

@@ -161,9 +161,10 @@ export interface StatsDisplayOptions {
  * Type de statistique à afficher sur la carte
  * - 'number' : affiche simplement un nombre
  * - 'chart' : affiche un graphique (courbe)
+ * - 'info' : affiche une information textuelle (ex: prochain épisode à télécharger)
  * - 'custom' : type personnalisé spécifique à un template (utilise customType)
  */
-export type CardStatType = 'number' | 'chart' | 'custom'
+export type CardStatType = 'number' | 'chart' | 'info' | 'custom'
 
 /**
  * Configuration de la statistique affichée sur la carte

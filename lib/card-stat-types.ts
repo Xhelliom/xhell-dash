@@ -19,8 +19,11 @@ import { cardRegistry } from './card-registry'
  * Types de statistiques de carte communs disponibles pour tous les templates
  * 
  * Ces types sont toujours disponibles, indépendamment des cartes
+ * - 'number' : affiche un nombre simple (ex: 150 films)
+ * - 'chart' : affiche un graphique de type courbe
+ * - 'info' : affiche une information textuelle (ex: prochain épisode)
  */
-export const COMMON_CARD_STAT_TYPES = ['number', 'chart'] as const
+export const COMMON_CARD_STAT_TYPES = ['number', 'chart', 'info'] as const
 
 /**
  * Types de statistiques de carte spécifiques par template

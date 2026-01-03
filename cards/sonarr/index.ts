@@ -33,7 +33,10 @@ const sonarrTemplate: StatsTemplate = {
     showKPIs: true,
   },
   // Types de stats de carte disponibles pour Sonarr
-  cardStatTypes: ['number', 'chart'],
+  // - 'number' : affiche un nombre (ex: total séries)
+  // - 'chart' : affiche une courbe
+  // - 'info' : affiche une information textuelle (ex: prochain épisode)
+  cardStatTypes: ['number', 'chart', 'info'],
 }
 
 /**
@@ -49,14 +52,19 @@ const sonarrCard: CardDefinition = {
   apiRouteHandler: undefined, // Sera chargé dynamiquement
   statsPanelComponent: SonarrStatsPanel,
   cardStatComponents: {},
-  cardStatTypes: ['number', 'chart'],
+  // Types de stats disponibles :
+  // - 'number' : pour les compteurs (séries, épisodes, queue)
+  // - 'chart' : pour les graphiques
+  // - 'info' : pour les informations textuelles (prochain épisode)
+  cardStatTypes: ['number', 'chart', 'info'],
   // Clés de statistiques disponibles pour Sonarr
+  // Les clés marquées (info) sont optimisées pour le type 'info'
   availableStatKeys: [
     { value: 'totalSeries', label: 'Total Séries' },
     { value: 'totalEpisodes', label: 'Total Épisodes' },
     { value: 'queuePending', label: 'Queue en attente' },
     { value: 'queueDownloading', label: 'Queue en téléchargement' },
-    { value: 'upcomingEpisodes', label: 'Prochains épisodes' },
+    { value: 'upcomingEpisodes', label: 'Prochain épisode (info)' },
   ],
   types: {},
 }

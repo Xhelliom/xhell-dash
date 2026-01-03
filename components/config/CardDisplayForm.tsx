@@ -95,9 +95,10 @@ export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
     const updates: Partial<CardStatConfig> = { type: newType }
 
     // Si c'est un type custom, déterminer le customType
+    // Note: 'info' est un type commun, pas un type custom
     if (newType === 'custom') {
-      // Trouver le premier type custom disponible
-      const customTypes = availableTypes.filter(t => !['number', 'chart'].includes(t))
+      // Trouver le premier type custom disponible (exclure les types communs)
+      const customTypes = availableTypes.filter(t => !['number', 'chart', 'info'].includes(t))
       if (customTypes.length > 0) {
         updates.customType = customTypes[0]
       }
@@ -130,8 +131,9 @@ export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
   }
 
   // Séparer les types communs et custom
-  const commonTypes = availableTypes.filter(t => ['number', 'chart'].includes(t))
-  const customTypes = availableTypes.filter(t => !['number', 'chart'].includes(t))
+  // Les types communs sont : 'number', 'chart', 'info'
+  const commonTypes = availableTypes.filter(t => ['number', 'chart', 'info'].includes(t))
+  const customTypes = availableTypes.filter(t => !['number', 'chart', 'info'].includes(t))
 
   return (
     <div className="space-y-6">
@@ -157,7 +159,13 @@ export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
               <SelectItem value="none">Aucun</SelectItem>
               {commonTypes.map((type) => (
                 <SelectItem key={type} value={type}>
-                  {type === 'number' ? 'Nombre' : 'Graphique (courbe)'}
+                  {type === 'number' 
+                    ? 'Nombre' 
+                    : type === 'chart' 
+                    ? 'Graphique (courbe)' 
+                    : type === 'info'
+                    ? 'Information (texte)'
+                    : type}
                 </SelectItem>
               ))}
               {customTypes.length > 0 && (
@@ -191,8 +199,9 @@ export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
           </div>
         )}
 
-        {/* Clé de la statistique (si type = number ou chart) */}
-        {cardStatType && cardStatType !== 'custom' && (
+        {/* Clé de la statistique (si type = number, chart ou info) */}
+        {/* Le type 'info' a aussi besoin d'une clé pour savoir quelle donnée afficher */}
+        {cardStatType && (cardStatType !== 'custom' || customType === 'info') && (
           <div className="space-y-2">
             <Label htmlFor="cardStatKey">Clé de la statistique</Label>
             <Select
