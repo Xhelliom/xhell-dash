@@ -16,11 +16,17 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, HardDrive, Cpu, MemoryStick, Server, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Loader2, HardDrive, Cpu, MemoryStick, Server, AlertCircle, RefreshCw } from 'lucide-react'
 import type { TrueNASStats } from './types'
 import type { StatsDisplayOptions, App } from '@/lib/types'
 import type { StatsPanelProps } from '@/lib/card-registry'
 import { getTemplateById } from '@/lib/stats-templates'
+import { getCachedData, setCachedData, getCacheKey, getCacheTimestamp } from '@/lib/cache-client'
+import { formatRelativeTime, formatDateTime, getDataAgeColor } from '@/lib/date-utils'
+import { fetchWithRetry } from '@/lib/api-retry'
+import { createStructuredError, isRecoverableError } from '@/lib/error-handler'
+import { getTimeoutFromApp } from '@/lib/timeout-config'
 
 /**
  * Formate les bytes en format lisible
@@ -43,62 +49,143 @@ export function TrueNASStatsPanel({ open, onOpenChange, appId, appName }: StatsP
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [displayOptions, setDisplayOptions] = useState<StatsDisplayOptions | null>(null)
+    const [lastUpdated, setLastUpdated] = useState<number | null>(null)
+    const [isRefreshing, setIsRefreshing] = useState(false)
+    const [app, setApp] = useState<App | null>(null)
+
+    // Intervalle de rafraîchissement configurable (défaut : 10 minutes)
+    const refreshInterval = app?.statsConfig?.refreshInterval || 600000
 
     /**
-     * Récupère les statistiques depuis l'API et les options d'affichage depuis l'app
+     * Fonction pour récupérer les statistiques depuis l'API
+     * Peut être appelée manuellement (rafraîchissement) ou automatiquement
+     */
+    const fetchData = async (forceRefresh = false) => {
+        // Ne pas afficher le loader si on force le rafraîchissement (on utilise isRefreshing)
+        if (!forceRefresh) {
+            setIsLoading(true)
+        } else {
+            setIsRefreshing(true)
+        }
+        setError(null)
+
+        try {
+            const templateId = 'truenas'
+            const cacheKey = getCacheKey(appId, templateId)
+
+            // Charger depuis le cache si disponible et pas de force refresh (optimistic UI)
+            if (!forceRefresh) {
+                const cachedData = getCachedData<TrueNASStats>(cacheKey)
+                if (cachedData) {
+                    setStats(cachedData)
+                    const cachedTimestamp = getCacheTimestamp(cacheKey)
+                    if (cachedTimestamp) {
+                        setLastUpdated(cachedTimestamp)
+                    }
+                }
+            }
+
+            // Récupérer l'app pour avoir accès aux options d'affichage
+            const appResponse = await fetch(`/api/apps`)
+            if (appResponse.ok) {
+                const apps: App[] = await appResponse.json()
+                const currentApp = apps.find((a) => a.id === appId)
+
+                if (currentApp) {
+                    setApp(currentApp)
+
+                    if (currentApp.statsConfig?.displayOptions) {
+                        setDisplayOptions(currentApp.statsConfig.displayOptions)
+                    } else if (currentApp.statsConfig?.templateId) {
+                        const template = getTemplateById(currentApp.statsConfig.templateId)
+                        if (template) {
+                            setDisplayOptions(template.defaultDisplayOptions)
+                        }
+                    } else {
+                        setDisplayOptions({
+                            showKPIs: true,
+                        })
+                    }
+                }
+            }
+
+            // Récupérer les statistiques depuis l'API
+            // Utiliser le timeout adaptatif selon le type d'API
+            const timeout = getTimeoutFromApp(app || { id: appId } as App)
+            
+            // Utiliser fetchWithRetry pour réessayer automatiquement en cas d'erreur
+            const statsResponse = await fetchWithRetry(
+                `/api/apps/${appId}/stats/truenas`,
+                {
+                    signal: AbortSignal.timeout(timeout),
+                },
+                {
+                    maxRetries: 3,
+                    baseDelay: 1000,
+                }
+            )
+
+            if (!statsResponse.ok) {
+                const errorData = await statsResponse.json().catch(() => ({}))
+                const error = new Error(errorData.error || 'Erreur lors de la récupération des statistiques')
+                const structuredError = createStructuredError(error, statsResponse)
+                throw structuredError
+            }
+
+            const data = await statsResponse.json()
+            setStats(data)
+            const now = Date.now()
+            setLastUpdated(now)
+
+            // Mettre en cache avec TTL de 5 minutes
+            setCachedData(cacheKey, data, 300000)
+        } catch (err: any) {
+            console.error('Erreur lors de la récupération des stats TrueNAS:', err)
+            
+            // Créer une erreur structurée
+            const structuredError = err.type 
+                ? err 
+                : createStructuredError(
+                    err instanceof Error ? err : new Error(String(err))
+                  )
+            
+            // Afficher un message d'erreur approprié
+            setError(structuredError.message)
+            
+            // Si l'erreur est récupérable et qu'on a des données en cache, les garder affichées
+            if (isRecoverableError(structuredError) || !stats) {
+                const cacheKey = getCacheKey(appId, 'truenas')
+                const cachedData = getCachedData<TrueNASStats>(cacheKey)
+                if (cachedData) {
+                    setStats(cachedData)
+                    const cachedTimestamp = getCacheTimestamp(cacheKey)
+                    if (cachedTimestamp) {
+                        setLastUpdated(cachedTimestamp)
+                    }
+                }
+            }
+        } finally {
+            setIsLoading(false)
+            setIsRefreshing(false)
+        }
+    }
+
+    /**
+     * Effect pour récupérer les données au chargement et rafraîchir périodiquement
      */
     useEffect(() => {
         if (!open || !appId) return
 
-        const fetchData = async () => {
-            setIsLoading(true)
-            setError(null)
-
-            try {
-                // Récupérer l'app pour avoir accès aux options d'affichage
-                const appResponse = await fetch(`/api/apps`)
-                if (appResponse.ok) {
-                    const apps: App[] = await appResponse.json()
-                    const app = apps.find((a) => a.id === appId)
-
-                    if (app) {
-                        const templateId = app.statsConfig?.templateId || 'truenas'
-
-                        if (app.statsConfig?.displayOptions) {
-                            setDisplayOptions(app.statsConfig.displayOptions)
-                        } else if (app.statsConfig?.templateId) {
-                            const template = getTemplateById(app.statsConfig.templateId)
-                            if (template) {
-                                setDisplayOptions(template.defaultDisplayOptions)
-                            }
-                        } else {
-                            setDisplayOptions({
-                                showKPIs: true,
-                            })
-                        }
-                    }
-                }
-
-                // Récupérer les statistiques depuis l'API
-                const statsResponse = await fetch(`/api/apps/${appId}/stats/truenas`)
-
-                if (!statsResponse.ok) {
-                    const errorData = await statsResponse.json()
-                    throw new Error(errorData.error || 'Erreur lors de la récupération des statistiques')
-                }
-
-                const data = await statsResponse.json()
-                setStats(data)
-            } catch (err: any) {
-                console.error('Erreur lors de la récupération des stats:', err)
-                setError(err.message || 'Impossible de charger les statistiques')
-            } finally {
-                setIsLoading(false)
-            }
-        }
-
         fetchData()
-    }, [open, appId])
+
+        // Rafraîchir selon l'intervalle configuré (défaut : 10 minutes)
+        const interval = setInterval(() => {
+            fetchData()
+        }, refreshInterval)
+
+        return () => clearInterval(interval)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, appId]) // refreshInterval peut changer mais on ne veut pas recréer l'interval à chaque fois
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -107,10 +194,42 @@ export function TrueNASStatsPanel({ open, onOpenChange, appId, appName }: StatsP
                 className="h-[90vh] max-h-[90vh] overflow-y-auto p-6"
             >
                 <SheetHeader className="pb-4 border-b px-0">
-                    <SheetTitle className="text-2xl">Statistiques {appName}</SheetTitle>
-                    <SheetDescription>
-                        Vue d'ensemble de votre système TrueNAS
-                    </SheetDescription>
+                    <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                            <SheetTitle className="text-2xl">Statistiques {appName}</SheetTitle>
+                            <SheetDescription>
+                                Vue d'ensemble de votre système TrueNAS
+                            </SheetDescription>
+                            {lastUpdated && (
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span 
+                                        className={`text-xs px-2 py-1 rounded-full ${
+                                            getDataAgeColor(lastUpdated) === 'green' 
+                                                ? 'bg-green-500/10 text-green-600 dark:text-green-400' 
+                                                : getDataAgeColor(lastUpdated) === 'orange'
+                                                ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
+                                                : 'bg-red-500/10 text-red-600 dark:text-red-400'
+                                        }`}
+                                    >
+                                        Mis à jour {formatRelativeTime(lastUpdated)}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        ({formatDateTime(lastUpdated)})
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => fetchData(true)}
+                            disabled={isRefreshing || isLoading}
+                            className="ml-4"
+                            title="Rafraîchir les statistiques"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        </Button>
+                    </div>
                 </SheetHeader>
 
                 <div className="mt-6">

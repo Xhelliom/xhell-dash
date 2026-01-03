@@ -138,23 +138,66 @@ async function fetchTrueNASStats(
   if (poolsResponse.ok) {
     const poolsData = await poolsResponse.json()
     
-    for (const pool of poolsData) {
-      const size = pool.size?.raw || 0
-      const allocated = pool.allocated?.raw || 0
+    // Gérer le cas où poolsData est un tableau ou un objet avec une propriété data
+    const poolsArray = Array.isArray(poolsData) ? poolsData : (poolsData.data || [])
+    
+    for (const pool of poolsArray) {
+      // Les données de taille et d'allocation sont dans pool.topology.data[0].stats
+      // TrueNAS stocke les informations dans la structure topology
+      let size = 0
+      let allocated = 0
+
+      // Extraire les données depuis topology.data[0].stats
+      if (pool.topology && pool.topology.data && pool.topology.data.length > 0) {
+        const dataVdev = pool.topology.data[0]
+        if (dataVdev.stats) {
+          size = dataVdev.stats.size || 0
+          allocated = dataVdev.stats.allocated || 0
+        }
+      }
+
+      // Si les données ne sont pas dans topology, essayer d'autres emplacements
+      // (pour compatibilité avec différentes versions de l'API)
+      if (size === 0 && allocated === 0) {
+        // Format alternatif 1: pool.size.raw et pool.allocated.raw
+        if (pool.size) {
+          if (typeof pool.size === 'object' && pool.size.raw !== undefined) {
+            size = typeof pool.size.raw === 'number' ? pool.size.raw : parseInt(pool.size.raw, 10) || 0
+          } else if (typeof pool.size === 'number') {
+            size = pool.size
+          }
+        }
+        
+        if (pool.allocated) {
+          if (typeof pool.allocated === 'object' && pool.allocated.raw !== undefined) {
+            allocated = typeof pool.allocated.raw === 'number' ? pool.allocated.raw : parseInt(pool.allocated.raw, 10) || 0
+          } else if (typeof pool.allocated === 'number') {
+            allocated = pool.allocated
+          }
+        }
+      }
+
+      // Calculer l'espace libre
       const free = size - allocated
 
-      pools.push({
-        id: pool.id,
-        name: pool.name,
-        status: pool.status || 'unknown',
-        size,
-        allocated,
-        free,
-      })
+      // Ne traiter que les pools valides (avec une taille > 0)
+      if (size > 0) {
+        pools.push({
+          id: pool.id,
+          name: pool.name || 'Unknown',
+          status: pool.status || 'unknown',
+          size,
+          allocated,
+          free,
+        })
 
-      diskTotal += size
-      diskUsed += allocated
+        diskTotal += size
+        diskUsed += allocated
+      }
     }
+  } else {
+    // Si l'endpoint /pool ne fonctionne pas, logger l'erreur
+    console.error(`[TrueNAS] Erreur lors de la récupération des pools: ${poolsResponse.status}`)
   }
 
   // Récupérer les services
@@ -183,35 +226,34 @@ async function fetchTrueNASStats(
     }
   }
 
-  // Récupérer les métriques en temps réel (CPU, mémoire)
+  // Récupérer les métriques CPU et mémoire
+  // Pour TrueNAS 13.0, les endpoints de reporting (/reporting/realtime, /reporting/get_data) 
+  // ne sont pas disponibles via l'API REST
+  // Utilisons les données disponibles dans system/info
+  
   let cpuUsage = 0
   let memoryUsage = 0
-  let memoryTotal = 0
+  let memoryTotal = systemInfo.physmem || 0 // Mémoire physique totale depuis system/info
   let memoryUsed = 0
 
-  try {
-    const realtimeResponse = await fetch(`${apiUrl}/api/v2.0/reporting/realtime`, {
-      headers,
-      signal: AbortSignal.timeout(10000),
-    })
-
-    if (realtimeResponse.ok) {
-      const realtimeData = await realtimeResponse.json()
-      
-      // Les données sont dans un format spécifique TrueNAS
-      if (realtimeData.cpu) {
-        cpuUsage = realtimeData.cpu.usage || 0
-      }
-      
-      if (realtimeData.memory) {
-        memoryTotal = realtimeData.memory.total || 0
-        memoryUsed = realtimeData.memory.used || 0
-        memoryUsage = memoryTotal > 0 ? (memoryUsed / memoryTotal) * 100 : 0
-      }
-    }
-  } catch (error) {
-    console.warn('Impossible de récupérer les métriques en temps réel:', error)
+  // Pour l'utilisation CPU, utiliser loadavg comme approximation
+  // loadavg[0] = charge moyenne sur 1 minute
+  // Pour convertir en pourcentage approximatif : (loadavg / cores) * 100
+  if (systemInfo.loadavg && Array.isArray(systemInfo.loadavg) && systemInfo.loadavg.length > 0) {
+    const load1m = systemInfo.loadavg[0]
+    const cores = systemInfo.cores || 4
+    // Load average représente la charge moyenne sur les cores
+    // Une charge de 1.0 = 100% d'utilisation d'un core
+    // Pour obtenir un pourcentage, on fait (load / cores) * 100, limité à 100%
+    cpuUsage = Math.min((load1m / cores) * 100, 100)
   }
+
+  // Pour la mémoire utilisée, system/info ne fournit que physmem (total)
+  // L'API REST de TrueNAS 13.0 ne fournit pas l'utilisation de la mémoire
+  // Les endpoints de reporting nécessitent WebSocket/JSON-RPC qui ne sont pas supportés ici
+  // On laisse memoryUsed et memoryUsage à 0
+  // Note: Pour obtenir l'utilisation de la mémoire, il faudrait utiliser l'API WebSocket/JSON-RPC
+  // ou mettre à jour vers une version plus récente de TrueNAS qui expose ces données via REST
 
   return {
     cpuUsage,
