@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as PopoverPrimitive from "@radix-ui/react-popover"
+import * as React from "react";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 // Composant racine du Popover
-const Popover = PopoverPrimitive.Root
+const Popover = PopoverPrimitive.Root;
 
 // Composant trigger (bouton qui déclenche l'ouverture)
-const PopoverTrigger = PopoverPrimitive.Trigger
+const PopoverTrigger = PopoverPrimitive.Trigger;
 
 // Composant anchor pour positionner le popover par rapport à un élément
-const PopoverAnchor = PopoverPrimitive.Anchor
+const PopoverAnchor = PopoverPrimitive.Anchor;
 
 // Composant portal pour afficher le popover dans un portail
-const PopoverPortal = PopoverPrimitive.Portal
+const PopoverPortal = PopoverPrimitive.Portal;
 
 // Composant contenu du popover
 const PopoverContent = React.forwardRef<
@@ -34,8 +34,7 @@ const PopoverContent = React.forwardRef<
       {...props}
     />
   </PopoverPortal>
-))
-PopoverContent.displayName = PopoverPrimitive.Content.displayName
+));
+PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
-export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor }
-
+export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor };

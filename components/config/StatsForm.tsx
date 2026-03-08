@@ -1,33 +1,33 @@
 /**
  * Composant StatsForm
- * 
+ *
  * Formulaire pour configurer les statistiques :
  * - Template de statistiques
  * - Options d'affichage (KPIs, graphiques, etc.)
  * - Options spécifiques par template
  */
 
-'use client'
+"use client";
 
-import { Label } from '@/components/ui/label'
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import type { App, CreateAppInput, StatsDisplayOptions, PlexKPIOptions } from '@/lib/types'
-import { STATS_TEMPLATES, getTemplateById } from '@/lib/stats-templates'
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { App, CreateAppInput, StatsDisplayOptions, PlexKPIOptions } from "@/lib/types";
+import { STATS_TEMPLATES, getTemplateById } from "@/lib/stats-templates";
 
 interface StatsFormProps {
-  app?: App | null
-  onChange: (data: Partial<CreateAppInput>) => void
+  app?: App | null;
+  onChange: (data: Partial<CreateAppInput>) => void;
 }
 
 export function StatsForm({ app, onChange }: StatsFormProps) {
-  const templateId = app?.statsConfig?.templateId || ''
+  const templateId = app?.statsConfig?.templateId || "";
   const displayOptions = app?.statsConfig?.displayOptions || {
     showKPIs: true,
     showLibraryChart: true,
@@ -39,24 +39,24 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
       showUsers: true,
       showLibraries: true,
     },
-  }
+  };
 
-  const selectedTemplate = templateId ? getTemplateById(templateId) : null
+  const selectedTemplate = templateId ? getTemplateById(templateId) : null;
 
   /**
    * Gère le changement de template
    */
   const handleTemplateChange = (newTemplateId: string) => {
-    const template = getTemplateById(newTemplateId)
-    
+    const template = getTemplateById(newTemplateId);
+
     onChange({
       statsConfig: {
         templateId: newTemplateId || undefined,
         displayOptions: template ? template.defaultDisplayOptions : undefined,
         cardStat: app?.statsConfig?.cardStat, // Conserver la config de carte
       },
-    })
-  }
+    });
+  };
 
   /**
    * Met à jour une option d'affichage spécifique
@@ -73,16 +73,13 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
           [key]: value,
         },
       },
-    })
-  }
+    });
+  };
 
   /**
    * Met à jour une option KPI spécifique
    */
-  const updateKPIOption = <K extends keyof PlexKPIOptions>(
-    key: K,
-    value: boolean
-  ) => {
+  const updateKPIOption = <K extends keyof PlexKPIOptions>(key: K, value: boolean) => {
     onChange({
       statsConfig: {
         ...app?.statsConfig,
@@ -94,8 +91,8 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
           },
         },
       },
-    })
-  }
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -110,14 +107,9 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
         {/* Sélection du template de stats */}
         <div className="space-y-2">
           <Label htmlFor="statsTemplate">Template de statistiques (optionnel)</Label>
-          <Select
-            value={templateId || undefined}
-            onValueChange={handleTemplateChange}
-          >
+          <Select value={templateId || undefined} onValueChange={handleTemplateChange}>
             <SelectTrigger id="statsTemplate" className="w-full">
-              <SelectValue placeholder="Aucun template">
-                {selectedTemplate?.name || ''}
-              </SelectValue>
+              <SelectValue placeholder="Aucun template">{selectedTemplate?.name || ""}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {STATS_TEMPLATES.map((template) => (
@@ -129,9 +121,7 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
             </SelectContent>
           </Select>
           {selectedTemplate && (
-            <p className="text-xs text-muted-foreground">
-              {selectedTemplate.description}
-            </p>
+            <p className="text-xs text-muted-foreground">{selectedTemplate.description}</p>
           )}
         </div>
 
@@ -146,7 +136,7 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
                 <Checkbox
                   id="showKPIs"
                   checked={displayOptions.showKPIs ?? true}
-                  onCheckedChange={(checked) => updateDisplayOption('showKPIs', checked === true)}
+                  onCheckedChange={(checked) => updateDisplayOption("showKPIs", checked === true)}
                 />
                 <Label htmlFor="showKPIs" className="cursor-pointer">
                   Afficher les KPI
@@ -157,7 +147,9 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
                 <Checkbox
                   id="showLibraryChart"
                   checked={displayOptions.showLibraryChart ?? true}
-                  onCheckedChange={(checked) => updateDisplayOption('showLibraryChart', checked === true)}
+                  onCheckedChange={(checked) =>
+                    updateDisplayOption("showLibraryChart", checked === true)
+                  }
                 />
                 <Label htmlFor="showLibraryChart" className="cursor-pointer">
                   Afficher le graphique des bibliothèques
@@ -168,7 +160,9 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
                 <Checkbox
                   id="showRecentMedia"
                   checked={displayOptions.showRecentMedia ?? true}
-                  onCheckedChange={(checked) => updateDisplayOption('showRecentMedia', checked === true)}
+                  onCheckedChange={(checked) =>
+                    updateDisplayOption("showRecentMedia", checked === true)
+                  }
                 />
                 <Label htmlFor="showRecentMedia" className="cursor-pointer">
                   Afficher les derniers médias ajoutés
@@ -177,15 +171,17 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
             </div>
 
             {/* Options spécifiques pour les KPI (si le template est Plex) */}
-            {selectedTemplate.id === 'plex' && displayOptions.showKPIs && (
+            {selectedTemplate.id === "plex" && displayOptions.showKPIs && (
               <div className="ml-6 space-y-2 border-l pl-4">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Éléments KPI à afficher :</p>
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Éléments KPI à afficher :
+                </p>
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="showMovies"
                       checked={displayOptions.kpiOptions?.showMovies ?? true}
-                      onCheckedChange={(checked) => updateKPIOption('showMovies', checked === true)}
+                      onCheckedChange={(checked) => updateKPIOption("showMovies", checked === true)}
                     />
                     <Label htmlFor="showMovies" className="cursor-pointer text-sm">
                       Films
@@ -195,7 +191,7 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
                     <Checkbox
                       id="showShows"
                       checked={displayOptions.kpiOptions?.showShows ?? true}
-                      onCheckedChange={(checked) => updateKPIOption('showShows', checked === true)}
+                      onCheckedChange={(checked) => updateKPIOption("showShows", checked === true)}
                     />
                     <Label htmlFor="showShows" className="cursor-pointer text-sm">
                       Séries
@@ -205,7 +201,9 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
                     <Checkbox
                       id="showEpisodes"
                       checked={displayOptions.kpiOptions?.showEpisodes ?? true}
-                      onCheckedChange={(checked) => updateKPIOption('showEpisodes', checked === true)}
+                      onCheckedChange={(checked) =>
+                        updateKPIOption("showEpisodes", checked === true)
+                      }
                     />
                     <Label htmlFor="showEpisodes" className="cursor-pointer text-sm">
                       Épisodes
@@ -215,7 +213,7 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
                     <Checkbox
                       id="showUsers"
                       checked={displayOptions.kpiOptions?.showUsers ?? true}
-                      onCheckedChange={(checked) => updateKPIOption('showUsers', checked === true)}
+                      onCheckedChange={(checked) => updateKPIOption("showUsers", checked === true)}
                     />
                     <Label htmlFor="showUsers" className="cursor-pointer text-sm">
                       Utilisateurs
@@ -225,7 +223,9 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
                     <Checkbox
                       id="showLibraries"
                       checked={displayOptions.kpiOptions?.showLibraries ?? true}
-                      onCheckedChange={(checked) => updateKPIOption('showLibraries', checked === true)}
+                      onCheckedChange={(checked) =>
+                        updateKPIOption("showLibraries", checked === true)
+                      }
                     />
                     <Label htmlFor="showLibraries" className="cursor-pointer text-sm">
                       Bibliothèques
@@ -238,6 +238,5 @@ export function StatsForm({ app, onChange }: StatsFormProps) {
         )}
       </div>
     </div>
-  )
+  );
 }
-

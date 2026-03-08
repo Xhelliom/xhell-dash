@@ -5,9 +5,11 @@ Cette bibliothèque de widgets permet d'ajouter des composants optionnels au-des
 ## Widgets Disponibles
 
 ### 1. **ClockWidget** - Horloge numérique
+
 Affiche l'heure actuelle avec possibilité d'afficher la date.
 
 **Configuration :**
+
 ```typescript
 {
   type: 'clock',
@@ -21,9 +23,11 @@ Affiche l'heure actuelle avec possibilité d'afficher la date.
 ```
 
 ### 2. **WeatherWidget** - Météo
+
 Affiche les informations météorologiques pour une ville donnée.
 
 **Configuration :**
+
 ```typescript
 {
   type: 'weather',
@@ -37,15 +41,18 @@ Affiche les informations météorologiques pour une ville donnée.
 ```
 
 **Note :** Pour utiliser le widget météo, vous devez :
+
 1. Créer un compte sur [OpenWeatherMap](https://openweathermap.org/api)
 2. Obtenir une clé API gratuite
 3. Ajouter la clé dans `.env.local` : `NEXT_PUBLIC_WEATHER_API_KEY=votre_cle`
 4. Ou la configurer directement dans le widget
 
 ### 3. **SystemInfoWidget** - Informations système
+
 Affiche des informations système comme l'uptime, la date de dernière mise à jour, etc.
 
 **Configuration :**
+
 ```typescript
 {
   type: 'system-info',
@@ -69,27 +76,27 @@ Dans `app/page.tsx`, ajoutez un widget à l'état `widgets` :
 ```typescript
 const [widgets, setWidgets] = useState<Widget[]>([
   {
-    id: 'clock-1',
-    type: 'clock',
+    id: "clock-1",
+    type: "clock",
     enabled: true,
     config: {
-      format: '24h',
+      format: "24h",
       showDate: true,
-      showSeconds: true
+      showSeconds: true,
     },
-    order: 1
+    order: 1,
   },
   {
-    id: 'weather-1',
-    type: 'weather',
+    id: "weather-1",
+    type: "weather",
     enabled: true,
     config: {
-      city: 'Paris',
-      unit: 'celsius'
+      city: "Paris",
+      unit: "celsius",
     },
-    order: 2
-  }
-])
+    order: 2,
+  },
+]);
 ```
 
 ### Activer/Désactiver un widget
@@ -110,6 +117,7 @@ Pour désactiver un widget, modifiez simplement `enabled: false` :
 Pour ajouter un nouveau widget :
 
 1. **Créer le composant du widget** dans `components/widgets/` :
+
 ```typescript
 // components/widgets/MyWidget.tsx
 'use client'
@@ -132,8 +140,9 @@ export function MyWidget({ config }: MyWidgetProps) {
 ```
 
 2. **Ajouter le type dans `lib/types.ts`** :
+
 ```typescript
-export type WidgetType = 'clock' | 'weather' | 'system-info' | 'my-widget'
+export type WidgetType = "clock" | "weather" | "system-info" | "my-widget";
 
 export interface MyWidgetConfig {
   // Configuration spécifique
@@ -141,6 +150,7 @@ export interface MyWidgetConfig {
 ```
 
 3. **Enregistrer le widget dans `WidgetContainer.tsx`** :
+
 ```typescript
 import { MyWidget } from './MyWidget'
 
@@ -168,4 +178,3 @@ case 'my-widget':
 - **Actualités** : [NewsAPI](https://newsapi.org/) (gratuit jusqu'à 100 requêtes/jour)
 - **Crypto** : [CoinGecko API](https://www.coingecko.com/en/api) (gratuit)
 - **RSS** : Utiliser un parser RSS côté serveur
-

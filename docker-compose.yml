@@ -6,7 +6,7 @@
 #   docker-compose logs -f       # Voir les logs
 #   docker-compose up --build    # Reconstruire et démarrer
 
-version: '3.8'
+version: "3.8"
 
 services:
   # Service principal de l'application dashboard
@@ -34,4 +34,3 @@ services:
     labels:
       - "com.xhell.dashboard=true"
       - "com.xhell.version=1.0.0"
-

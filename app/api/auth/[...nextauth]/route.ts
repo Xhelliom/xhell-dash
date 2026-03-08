@@ -5,9 +5,7 @@
 // - /api/auth/session
 // - etc.
 
-import { handlers } from "@/auth"
+import { handlers } from "@/auth";
 
 // On réexporte simplement les handlers fournis par Auth.js
-export const { GET, POST } = handlers
-
-
+export const { GET, POST } = handlers;

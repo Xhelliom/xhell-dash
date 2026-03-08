@@ -2,13 +2,9 @@
 // Ce fichier définit les providers, la gestion de session et expose
 // les helpers `auth`, `signIn`, `signOut` et les `handlers` pour l'API.
 
-import NextAuth from "next-auth"
-import Credentials from "next-auth/providers/credentials"
-import {
-  ensureDefaultAdmin,
-  findUserByEmail,
-  verifyPassword,
-} from "@/lib/users"
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import { ensureDefaultAdmin, findUserByEmail, verifyPassword } from "@/lib/users";
 
 /**
  * Implémentation avec un provider "credentials" basé sur Prisma :
@@ -36,32 +32,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         try {
           // On s'assure qu'un admin par défaut existe si nécessaire
-          await ensureDefaultAdmin()
+          await ensureDefaultAdmin();
 
-          const email = credentials?.email
-          const password = credentials?.password
+          const email = credentials?.email;
+          const password = credentials?.password;
 
           // Vérification que les credentials sont présents et de type string
           if (!email || !password || typeof email !== "string" || typeof password !== "string") {
-            console.log("[AUTH] Credentials invalides : email ou password manquant ou invalide")
-            return null
+            console.log("[AUTH] Credentials invalides : email ou password manquant ou invalide");
+            return null;
           }
 
           // Recherche de l'utilisateur dans la base via Prisma
-          const user = await findUserByEmail(email)
+          const user = await findUserByEmail(email);
           if (!user) {
-            console.log(`[AUTH] Utilisateur non trouvé : ${email}`)
-            return null
+            console.log(`[AUTH] Utilisateur non trouvé : ${email}`);
+            return null;
           }
 
           // Vérification du mot de passe à partir du hash stocké
-          const isValid = await verifyPassword(password, user)
+          const isValid = await verifyPassword(password, user);
           if (!isValid) {
-            console.log(`[AUTH] Mot de passe incorrect pour : ${email}`)
-            return null
+            console.log(`[AUTH] Mot de passe incorrect pour : ${email}`);
+            return null;
           }
 
-          console.log(`[AUTH] Connexion réussie pour : ${email} (${user.role})`)
+          console.log(`[AUTH] Connexion réussie pour : ${email} (${user.role})`);
 
           // L'objet retourné sera stocké dans le token / la session
           return {
@@ -69,10 +65,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             name: user.email,
             email: user.email,
             role: user.role,
-          }
+          };
         } catch (error) {
-          console.error("[AUTH] Erreur lors de l'authentification:", error)
-          return null
+          console.error("[AUTH] Erreur lors de l'authentification:", error);
+          return null;
         }
       },
     }),
@@ -92,12 +88,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       // Lors de la première connexion, on fusionne les infos utilisateur
       if (user) {
-        token.id = user.id
-        token.name = user.name
-        token.email = user.email
-        token.role = (user as any).role ?? "user"
+        token.id = user.id;
+        token.name = user.name;
+        token.email = user.email;
+        token.role = (user as any).role ?? "user";
       }
-      return token
+      return token;
     },
 
     /**
@@ -105,14 +101,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
      */
     async session({ session, token }) {
       if (session.user) {
-        const user = session.user as any
-        const tokenData = token as any
-        user.id = tokenData.id
-        session.user.name = token.name
-        session.user.email = token.email ?? ""
-        user.role = tokenData.role ?? "user"
+        const user = session.user as any;
+        const tokenData = token as any;
+        user.id = tokenData.id;
+        session.user.name = token.name;
+        session.user.email = token.email ?? "";
+        user.role = tokenData.role ?? "user";
       }
-      return session
+      return session;
     },
   },
   /**
@@ -120,6 +116,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
    * et AUTH_URL dans les variables d'environnement.
    */
   trustHost: true,
-})
-
-
+});

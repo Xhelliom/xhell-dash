@@ -1,14 +1,14 @@
 /**
  * Composant AppForm
- * 
+ *
  * Formulaire pour ajouter ou modifier une application
  * Utilise un Dialog shadcn/ui pour l'affichage modal
  */
 
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import * as Icons from 'lucide-react'
+import { useState, useEffect, useRef } from "react";
+import * as Icons from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,31 +16,37 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import type { App, CreateAppInput, StatsDisplayOptions, PlexKPIOptions, CardStatType } from '@/lib/types'
-import { getTemplateById } from '@/lib/stats-templates'
-import { cardRegistry } from '@/lib/card-registry'
-import { TemplateSpecificForm } from '@/components/config/TemplateSpecificForm'
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import type {
+  App,
+  CreateAppInput,
+  StatsDisplayOptions,
+  PlexKPIOptions,
+  CardStatType,
+} from "@/lib/types";
+import { getTemplateById } from "@/lib/stats-templates";
+import { cardRegistry } from "@/lib/card-registry";
+import { TemplateSpecificForm } from "@/components/config/TemplateSpecificForm";
 // Importer les cartes pour qu'elles s'enregistrent
-import '@/cards'
+import "@/cards";
 
 interface AppFormProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  app?: App | null
-  onSubmit: (data: CreateAppInput) => Promise<void>
-  asSheet?: boolean // Si true, retourne juste le contenu sans Dialog wrapper
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  app?: App | null;
+  onSubmit: (data: CreateAppInput) => Promise<void>;
+  asSheet?: boolean; // Si true, retourne juste le contenu sans Dialog wrapper
 }
 
 /**
@@ -48,69 +54,69 @@ interface AppFormProps {
  * Les utilisateurs peuvent choisir parmi ces icônes ou utiliser une URL
  */
 const POPULAR_ICONS = [
-  'Plex',
-  'Home',
-  'Server',
-  'Database',
-  'Cloud',
-  'Monitor',
-  'Film',
-  'Music',
-  'Image',
-  'File',
-  'Settings',
-  'User',
-  'Users',
-  'Lock',
-  'Globe',
-  'Wifi',
-  'HardDrive',
-  'Cpu',
-  'Activity',
-  'BarChart',
-]
+  "Plex",
+  "Home",
+  "Server",
+  "Database",
+  "Cloud",
+  "Monitor",
+  "Film",
+  "Music",
+  "Image",
+  "File",
+  "Settings",
+  "User",
+  "Users",
+  "Lock",
+  "Globe",
+  "Wifi",
+  "HardDrive",
+  "Cpu",
+  "Activity",
+  "BarChart",
+];
 
 /**
  * Récupère dynamiquement une icône Lucide par son nom
- * 
+ *
  * @param iconName - Nom de l'icône (ex: "Plex", "Home")
  * @returns Composant d'icône ou Grid3x3 si non trouvé
  */
 function getLucideIcon(iconName: string) {
   // Nettoyer le nom de l'icône (enlever espaces, mettre en PascalCase)
-  const cleanName = iconName
-    .replace(/\s+/g, '')
-    .replace(/[^a-zA-Z0-9]/g, '')
+  const cleanName = iconName.replace(/\s+/g, "").replace(/[^a-zA-Z0-9]/g, "");
 
   // Chercher l'icône dans les exports de lucide-react
   // Par défaut, on utilise Grid3x3 si l'icône n'est pas trouvée
-  const IconComponent = (Icons as any)[cleanName] || Icons.Grid3x3
+  const IconComponent = (Icons as any)[cleanName] || Icons.Grid3x3;
 
-  return IconComponent
+  return IconComponent;
 }
 
 export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: AppFormProps) {
   // Référence au formulaire pour la soumission
-  const formRef = useRef<HTMLFormElement>(null)
+  const formRef = useRef<HTMLFormElement>(null);
 
   // État du formulaire
-  const [name, setName] = useState('')
-  const [url, setUrl] = useState('')
-  const [logoType, setLogoType] = useState<'icon' | 'url'>('icon')
-  const [logo, setLogo] = useState('')
-  const [statApiUrl, setStatApiUrl] = useState('')
-  const [statLabel, setStatLabel] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+  const [logoType, setLogoType] = useState<"icon" | "url">("icon");
+  const [logo, setLogo] = useState("");
+  const [statApiUrl, setStatApiUrl] = useState("");
+  const [statLabel, setStatLabel] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // État générique pour stocker toutes les valeurs de configuration spécifiques au template
   // (apiKey, token, username, password, kubeconfig, etc.)
-  const [templateSpecificData, setTemplateSpecificData] = useState<Record<string, any>>({})
+  const [templateSpecificData, setTemplateSpecificData] = useState<Record<string, any>>({});
 
   // État pour le template de stats sélectionné
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
-  
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+
   // État pour stocker les templates disponibles
-  const [availableTemplates, setAvailableTemplates] = useState<Array<{ id: string; name: string; description: string }>>([])
+  const [availableTemplates, setAvailableTemplates] = useState<
+    Array<{ id: string; name: string; description: string }>
+  >([]);
 
   // État pour les options d'affichage
   const [displayOptions, setDisplayOptions] = useState<StatsDisplayOptions>({
@@ -124,114 +130,132 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
       showUsers: true,
       showLibraries: true,
     },
-  })
+  });
 
   // État pour la configuration de la statistique de carte
-  const [cardStatType, setCardStatType] = useState<CardStatType | ''>('')
-  const [cardStatCustomType, setCardStatCustomType] = useState<string>('') // Pour les types custom (ex: 'plex-recent')
-  const [cardStatKey, setCardStatKey] = useState<string>('')
-  const [cardStatLabel, setCardStatLabel] = useState<string>('')
+  const [cardStatType, setCardStatType] = useState<CardStatType | "">("");
+  const [cardStatCustomType, setCardStatCustomType] = useState<string>(""); // Pour les types custom (ex: 'plex-recent')
+  const [cardStatKey, setCardStatKey] = useState<string>("");
+  const [cardStatLabel, setCardStatLabel] = useState<string>("");
 
   // Récupérer le template sélectionné
-  const selectedTemplate = selectedTemplateId ? getTemplateById(selectedTemplateId) : null
+  const selectedTemplate = selectedTemplateId ? getTemplateById(selectedTemplateId) : null;
 
   // Options de clés disponibles selon le template
   // Récupère dynamiquement depuis le registre de cartes
   const getAvailableStatKeys = (): { value: string; label: string }[] => {
-    return cardRegistry.getAvailableStatKeys(selectedTemplateId || undefined)
-  }
+    return cardRegistry.getAvailableStatKeys(selectedTemplateId || undefined);
+  };
 
   // Charger les templates disponibles au montage
   useEffect(() => {
     // Charger les templates dès que le composant est monté
-    const templates = cardRegistry.getTemplates()
+    const templates = cardRegistry.getTemplates();
     if (templates.length > 0) {
-      setAvailableTemplates(templates.map(t => ({
-        id: t.id,
-        name: t.name,
-        description: t.description
-      })))
+      setAvailableTemplates(
+        templates.map((t) => ({
+          id: t.id,
+          name: t.name,
+          description: t.description,
+        }))
+      );
     }
-  }, []) // Charger une seule fois au montage
+  }, []); // Charger une seule fois au montage
 
   // Réinitialiser le formulaire quand le dialog s'ouvre/ferme ou quand l'app change
   useEffect(() => {
     if (open) {
       // Charger les templates en premier
-      const templates = cardRegistry.getTemplates()
-      const templatesArray = templates.length > 0 
-        ? templates.map(t => ({
-            id: t.id,
-            name: t.name,
-            description: t.description
-          }))
-        : []
-      
+      const templates = cardRegistry.getTemplates();
+      const templatesArray =
+        templates.length > 0
+          ? templates.map((t) => ({
+              id: t.id,
+              name: t.name,
+              description: t.description,
+            }))
+          : [];
+
       // Mettre à jour les templates disponibles
-      setAvailableTemplates(templatesArray)
-      
+      setAvailableTemplates(templatesArray);
+
       if (app) {
         // Mode édition : remplir avec les données de l'app
-        setName(app.name)
-        setUrl(app.url)
-        setLogoType(app.logoType)
+        setName(app.name);
+        setUrl(app.url);
+        setLogoType(app.logoType);
         // S'assurer que logo n'est pas une chaîne vide
-        setLogo(app.logo || '')
-        setStatApiUrl(app.statApiUrl || '')
-        setStatLabel(app.statLabel || '')
+        setLogo(app.logo || "");
+        setStatApiUrl(app.statApiUrl || "");
+        setStatLabel(app.statLabel || "");
         // Charger toutes les données spécifiques au template depuis l'app
         // (apiKey, token, username, password, plexToken, etc.)
-        const specificData: Record<string, any> = {}
+        const specificData: Record<string, any> = {};
         // Récupérer tous les champs potentiels de configuration
-        const possibleFields = ['apiKey', 'token', 'username', 'password', 'plexToken', 'plexServerUrl', 
-          'sonarrApiKey', 'radarrApiKey', 'lidarrApiKey', 'truenasApiKey', 'homeAssistantApiKey',
-          'proxmoxToken', 'proxmoxPassword', 'kubernetesToken', 'kubeconfig', 
-          'uptimeKumaApiKey', 'overseerrApiKey']
-        possibleFields.forEach(field => {
+        const possibleFields = [
+          "apiKey",
+          "token",
+          "username",
+          "password",
+          "plexToken",
+          "plexServerUrl",
+          "sonarrApiKey",
+          "radarrApiKey",
+          "lidarrApiKey",
+          "truenasApiKey",
+          "homeAssistantApiKey",
+          "proxmoxToken",
+          "proxmoxPassword",
+          "kubernetesToken",
+          "kubeconfig",
+          "uptimeKumaApiKey",
+          "overseerrApiKey",
+        ];
+        possibleFields.forEach((field) => {
           if ((app as any)[field] !== undefined) {
-            specificData[field] = (app as any)[field]
+            specificData[field] = (app as any)[field];
           }
-        })
-        setTemplateSpecificData(specificData)
+        });
+        setTemplateSpecificData(specificData);
         // Charger le template et les options d'affichage
         // Définir selectedTemplateId après avoir chargé les templates
-        const templateId = app.statsConfig?.templateId || ''
+        const templateId = app.statsConfig?.templateId || "";
         // Vérifier que le template existe dans la liste avant de le sélectionner
-        if (templateId && templatesArray.some(t => t.id === templateId)) {
-          setSelectedTemplateId(templateId)
+        if (templateId && templatesArray.some((t) => t.id === templateId)) {
+          setSelectedTemplateId(templateId);
         } else {
-          setSelectedTemplateId('')
+          setSelectedTemplateId("");
         }
         if (app.statsConfig?.displayOptions) {
-          setDisplayOptions(app.statsConfig.displayOptions)
+          setDisplayOptions(app.statsConfig.displayOptions);
         } else if (templateId) {
-          const template = getTemplateById(templateId)
+          const template = getTemplateById(templateId);
           if (template) {
-            setDisplayOptions(template.defaultDisplayOptions)
+            setDisplayOptions(template.defaultDisplayOptions);
           }
         }
         // Charger la configuration de la statistique de carte
         if (app.statsConfig?.cardStat) {
-          setCardStatType(app.statsConfig.cardStat.type)
-          setCardStatCustomType(app.statsConfig.cardStat.customType || '')
-          setCardStatKey(app.statsConfig.cardStat.key || '')
-          setCardStatLabel(app.statsConfig.cardStat.label || '')
+          setCardStatType(app.statsConfig.cardStat.type);
+          setCardStatCustomType(app.statsConfig.cardStat.customType || "");
+          setCardStatKey(app.statsConfig.cardStat.key || "");
+          setCardStatLabel(app.statsConfig.cardStat.label || "");
         } else {
-          setCardStatType('')
-          setCardStatCustomType('')
-          setCardStatKey('')
-          setCardStatLabel('')
+          setCardStatType("");
+          setCardStatCustomType("");
+          setCardStatKey("");
+          setCardStatLabel("");
         }
       } else {
         // Mode création : réinitialiser
-        setName('')
-        setUrl('')
-        setLogoType('icon')
-        setLogo('')
-        setStatApiUrl('')
-        setStatLabel('')
-        setTemplateSpecificData({})
-        setSelectedTemplateId('')
+        setName("");
+        setUrl("");
+        setLogoType("icon");
+        setLogo("");
+        setStatApiUrl("");
+        setStatLabel("");
+        setTemplateSpecificData({});
+        setSelectedTemplateId("");
         setDisplayOptions({
           showKPIs: true,
           showLibraryChart: true,
@@ -243,89 +267,89 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
             showUsers: true,
             showLibraries: true,
           },
-        })
-        setCardStatType('')
-        setCardStatCustomType('')
-        setCardStatKey('')
-        setCardStatLabel('')
+        });
+        setCardStatType("");
+        setCardStatCustomType("");
+        setCardStatKey("");
+        setCardStatLabel("");
       }
     }
-  }, [open, app])
+  }, [open, app]);
 
   /**
    * Valide les données du formulaire avant soumission
    */
   const validate = (): boolean => {
     if (!name.trim()) {
-      alert('Le nom est obligatoire')
-      return false
+      alert("Le nom est obligatoire");
+      return false;
     }
     if (!url.trim()) {
-      alert('L\'URL est obligatoire')
-      return false
+      alert("L'URL est obligatoire");
+      return false;
     }
     try {
-      new URL(url)
+      new URL(url);
     } catch {
-      alert('L\'URL n\'est pas valide')
-      return false
+      alert("L'URL n'est pas valide");
+      return false;
     }
     if (!logo.trim()) {
-      alert('Le logo est obligatoire')
-      return false
+      alert("Le logo est obligatoire");
+      return false;
     }
-    if (logoType === 'url') {
+    if (logoType === "url") {
       try {
-        new URL(logo)
+        new URL(logo);
       } catch {
-        alert('L\'URL du logo n\'est pas valide')
-        return false
+        alert("L'URL du logo n'est pas valide");
+        return false;
       }
     }
     // Validation pour le template générique : statApiUrl est obligatoire
-    if (selectedTemplateId === 'generic') {
+    if (selectedTemplateId === "generic") {
       if (!statApiUrl || !statApiUrl.trim()) {
-        alert('L\'URL de l\'API de statistiques est obligatoire pour le template générique')
-        return false
+        alert("L'URL de l'API de statistiques est obligatoire pour le template générique");
+        return false;
       }
       try {
-        new URL(statApiUrl)
+        new URL(statApiUrl);
       } catch {
-        alert('L\'URL de l\'API de statistiques n\'est pas valide')
-        return false
+        alert("L'URL de l'API de statistiques n'est pas valide");
+        return false;
       }
     } else if (statApiUrl && statApiUrl.trim()) {
       // Pour les autres templates, statApiUrl est optionnel mais doit être valide si fourni
       try {
-        new URL(statApiUrl)
+        new URL(statApiUrl);
       } catch {
-        alert('L\'URL de l\'API de statistiques n\'est pas valide')
-        return false
+        alert("L'URL de l'API de statistiques n'est pas valide");
+        return false;
       }
     }
     // Validation spécifique selon le template
     // Les validations spécifiques sont gérées par TemplateSpecificForm avec l'attribut required
     // Ici on peut ajouter des validations supplémentaires si nécessaire
-    return true
-  }
+    return true;
+  };
 
   /**
    * Gère le changement de template
    */
   const handleTemplateChange = (templateId: string) => {
     // Si la valeur est undefined ou vide, réinitialiser
-    if (!templateId || templateId === 'none') {
-      setSelectedTemplateId('')
-      setTemplateSpecificData({}) // Réinitialiser les données spécifiques
-      return
+    if (!templateId || templateId === "none") {
+      setSelectedTemplateId("");
+      setTemplateSpecificData({}); // Réinitialiser les données spécifiques
+      return;
     }
 
     // Réinitialiser les données spécifiques quand on change de template
     // pour éviter de garder les données du template précédent
-    setTemplateSpecificData({})
-    setSelectedTemplateId(templateId)
+    setTemplateSpecificData({});
+    setSelectedTemplateId(templateId);
 
-    const template = getTemplateById(templateId)
+    const template = getTemplateById(templateId);
     if (template) {
       // Appliquer le template pour pré-remplir les champs
       const updatedValues = template.applyTemplate({
@@ -334,17 +358,17 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
         logo,
         logoType,
         statLabel,
-      })
+      });
 
-      if (updatedValues.name) setName(updatedValues.name)
-      if (updatedValues.logo) setLogo(updatedValues.logo)
-      if (updatedValues.logoType) setLogoType(updatedValues.logoType)
-      if (updatedValues.statLabel) setStatLabel(updatedValues.statLabel)
+      if (updatedValues.name) setName(updatedValues.name);
+      if (updatedValues.logo) setLogo(updatedValues.logo);
+      if (updatedValues.logoType) setLogoType(updatedValues.logoType);
+      if (updatedValues.statLabel) setStatLabel(updatedValues.statLabel);
 
       // Appliquer les options d'affichage par défaut
-      setDisplayOptions(template.defaultDisplayOptions)
+      setDisplayOptions(template.defaultDisplayOptions);
     }
-  }
+  };
 
   /**
    * Met à jour une option d'affichage spécifique
@@ -356,36 +380,33 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
     setDisplayOptions((prev) => ({
       ...prev,
       [key]: value,
-    }))
-  }
+    }));
+  };
 
   /**
    * Met à jour une option KPI spécifique
    */
-  const updateKPIOption = <K extends keyof PlexKPIOptions>(
-    key: K,
-    value: boolean
-  ) => {
+  const updateKPIOption = <K extends keyof PlexKPIOptions>(key: K, value: boolean) => {
     setDisplayOptions((prev) => ({
       ...prev,
       kpiOptions: {
         ...prev.kpiOptions,
         [key]: value,
       },
-    }))
-  }
+    }));
+  };
 
   /**
    * Gère la soumission du formulaire
    */
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!validate()) {
-      return
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
       const formData: CreateAppInput = {
@@ -397,34 +418,41 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
         statLabel: statLabel.trim() || undefined,
         // Inclure toutes les données spécifiques au template
         ...Object.fromEntries(
-          Object.entries(templateSpecificData).map(([key, value]) => [
-            key,
-            typeof value === 'string' ? value.trim() || undefined : value
-          ]).filter(([_, value]) => value !== undefined && value !== '')
+          Object.entries(templateSpecificData)
+            .map(([key, value]) => [
+              key,
+              typeof value === "string" ? value.trim() || undefined : value,
+            ])
+            .filter(([_, value]) => value !== undefined && value !== "")
         ),
-        statsConfig: selectedTemplateId || cardStatType ? {
-          templateId: selectedTemplateId || undefined,
-          displayOptions: selectedTemplateId ? displayOptions : undefined,
-          cardStat: cardStatType ? {
-            type: cardStatType,
-            customType: cardStatCustomType || undefined,
-            key: cardStatKey.trim() || undefined,
-            label: cardStatLabel.trim() || undefined,
-          } : undefined,
-        } : undefined,
-      }
+        statsConfig:
+          selectedTemplateId || cardStatType
+            ? {
+                templateId: selectedTemplateId || undefined,
+                displayOptions: selectedTemplateId ? displayOptions : undefined,
+                cardStat: cardStatType
+                  ? {
+                      type: cardStatType,
+                      customType: cardStatCustomType || undefined,
+                      key: cardStatKey.trim() || undefined,
+                      label: cardStatLabel.trim() || undefined,
+                    }
+                  : undefined,
+              }
+            : undefined,
+      };
 
-      await onSubmit(formData)
+      await onSubmit(formData);
 
       // Fermer le dialog après succès
-      onOpenChange(false)
+      onOpenChange(false);
     } catch (error) {
-      console.error('Erreur lors de la soumission:', error)
-      alert('Une erreur est survenue lors de la sauvegarde')
+      console.error("Erreur lors de la soumission:", error);
+      alert("Une erreur est survenue lors de la sauvegarde");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Contenu du formulaire (réutilisable pour Dialog et Sheet)
   const formContent = (
@@ -459,14 +487,14 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
           {/* Sélection du template de stats */}
           <div className="space-y-2 border-t pt-4">
             <Label htmlFor="statsTemplate">Template de statistiques (optionnel)</Label>
-            <Select 
+            <Select
               key={`template-select-${availableTemplates.length}-${selectedTemplateId}`}
-              value={selectedTemplateId || undefined} 
+              value={selectedTemplateId || undefined}
               onValueChange={handleTemplateChange}
             >
               <SelectTrigger id="statsTemplate" className="w-full">
                 <SelectValue placeholder="Aucun template">
-                  {selectedTemplate?.name || ''}
+                  {selectedTemplate?.name || ""}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -479,16 +507,14 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
               </SelectContent>
             </Select>
             {selectedTemplate && (
-              <p className="text-xs text-muted-foreground">
-                {selectedTemplate.description}
-              </p>
+              <p className="text-xs text-muted-foreground">{selectedTemplate.description}</p>
             )}
           </div>
 
           {/* Type de logo */}
           <div className="space-y-2">
             <Label htmlFor="logoType">Type de logo *</Label>
-            <Select value={logoType} onValueChange={(value: 'icon' | 'url') => setLogoType(value)}>
+            <Select value={logoType} onValueChange={(value: "icon" | "url") => setLogoType(value)}>
               <SelectTrigger id="logoType">
                 <SelectValue />
               </SelectTrigger>
@@ -502,9 +528,9 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
           {/* Logo */}
           <div className="space-y-2">
             <Label htmlFor="logo">Logo *</Label>
-            {logoType === 'icon' ? (
+            {logoType === "icon" ? (
               <Select
-                key={`icon-select-${logo || 'empty'}-${open}`}
+                key={`icon-select-${logo || "empty"}-${open}`}
                 value={logo ? logo : undefined}
                 onValueChange={setLogo}
               >
@@ -513,13 +539,13 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                 </SelectTrigger>
                 <SelectContent>
                   {POPULAR_ICONS.map((icon) => {
-                    const IconComponent = getLucideIcon(icon)
+                    const IconComponent = getLucideIcon(icon);
                     return (
                       <SelectItem key={icon} value={icon}>
                         <IconComponent className="h-4 w-4 inline-block mr-2" />
                         {icon}
                       </SelectItem>
-                    )
+                    );
                   })}
                 </SelectContent>
               </Select>
@@ -536,7 +562,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
           </div>
 
           {/* API de statistiques (optionnel) - affiché seulement si template "générique" est sélectionné */}
-          {selectedTemplateId === 'generic' && (
+          {selectedTemplateId === "generic" && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="statApiUrl">URL de l'API de statistiques *</Label>
@@ -546,7 +572,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                   value={statApiUrl}
                   onChange={(e) => setStatApiUrl(e.target.value)}
                   placeholder="https://api.example.com/stats"
-                  required={selectedTemplateId === 'generic'}
+                  required={selectedTemplateId === "generic"}
                 />
                 <p className="text-xs text-muted-foreground">
                   URL de l'API externe pour récupérer les statistiques
@@ -574,98 +600,100 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
             <div className="border-t pt-4 mt-4 space-y-4">
               <h3 className="text-sm font-semibold">Statistique sur la carte</h3>
 
-            {/* Type de statistique */}
-            <div className="space-y-2">
-              <Label htmlFor="cardStatType">Type d'affichage</Label>
-              <Select
-                value={cardStatType === 'custom' ? cardStatCustomType : (cardStatType || 'none')}
-                onValueChange={(value) => {
-                  if (value === 'none') {
-                    setCardStatType('')
-                    setCardStatCustomType('')
-                    setCardStatKey('')
-                    setCardStatLabel('')
-                  } else if (value === 'number' || value === 'chart' || value === 'info') {
-                    // Types standards
-                    setCardStatType(value as CardStatType)
-                    setCardStatCustomType('')
-                  } else {
-                    // Types custom : utiliser 'custom' comme type et la valeur comme customType
-                    setCardStatType('custom')
-                    setCardStatCustomType(value)
-                  }
-                }}
-              >
-                <SelectTrigger id="cardStatType">
-                  <SelectValue placeholder="Aucun" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Aucun</SelectItem>
-                  <SelectItem value="number">Nombre</SelectItem>
-                  <SelectItem value="chart">Graphique (courbe)</SelectItem>
-                  {/* Types custom spécifiques au template sélectionné */}
-                  {selectedTemplateId && (() => {
-                    const card = cardRegistry.get(selectedTemplateId)
-                    const customTypes = card?.cardStatTypes?.filter(
-                      (type) => type !== 'number' && type !== 'chart'
-                    ) || []
-                    return customTypes.map((customType) => {
-                      // Générer un libellé lisible depuis le customType
-                      const label = customType
-                        .split('-')
-                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                        .join(' ')
-                      return (
-                        <SelectItem key={customType} value={customType}>
-                          {label} ({selectedTemplate?.name || selectedTemplateId})
-                        </SelectItem>
-                      )
-                    })
-                  })()}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Clé de la statistique (si type = number ou chart ou info, pas pour les types custom) */}
-            {cardStatType && (cardStatType === 'number' || cardStatType === 'chart' || cardStatType === 'info') && (
+              {/* Type de statistique */}
               <div className="space-y-2">
-                <Label htmlFor="cardStatKey">Clé de la statistique</Label>
+                <Label htmlFor="cardStatType">Type d'affichage</Label>
                 <Select
-                  value={cardStatKey}
-                  onValueChange={setCardStatKey}
+                  value={cardStatType === "custom" ? cardStatCustomType : cardStatType || "none"}
+                  onValueChange={(value) => {
+                    if (value === "none") {
+                      setCardStatType("");
+                      setCardStatCustomType("");
+                      setCardStatKey("");
+                      setCardStatLabel("");
+                    } else if (value === "number" || value === "chart" || value === "info") {
+                      // Types standards
+                      setCardStatType(value as CardStatType);
+                      setCardStatCustomType("");
+                    } else {
+                      // Types custom : utiliser 'custom' comme type et la valeur comme customType
+                      setCardStatType("custom");
+                      setCardStatCustomType(value);
+                    }
+                  }}
                 >
-                  <SelectTrigger id="cardStatKey">
-                    <SelectValue placeholder="Sélectionnez une clé" />
+                  <SelectTrigger id="cardStatType">
+                    <SelectValue placeholder="Aucun" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getAvailableStatKeys().map((key) => (
-                      <SelectItem key={key.value} value={key.value}>
-                        {key.label}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="none">Aucun</SelectItem>
+                    <SelectItem value="number">Nombre</SelectItem>
+                    <SelectItem value="chart">Graphique (courbe)</SelectItem>
+                    {/* Types custom spécifiques au template sélectionné */}
+                    {selectedTemplateId &&
+                      (() => {
+                        const card = cardRegistry.get(selectedTemplateId);
+                        const customTypes =
+                          card?.cardStatTypes?.filter(
+                            (type) => type !== "number" && type !== "chart"
+                          ) || [];
+                        return customTypes.map((customType) => {
+                          // Générer un libellé lisible depuis le customType
+                          const label = customType
+                            .split("-")
+                            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(" ");
+                          return (
+                            <SelectItem key={customType} value={customType}>
+                              {label} ({selectedTemplate?.name || selectedTemplateId})
+                            </SelectItem>
+                          );
+                        });
+                      })()}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Clé utilisée pour récupérer la valeur depuis l'API
-                </p>
               </div>
-            )}
 
-            {/* Libellé personnalisé */}
-            {cardStatType && (
-              <div className="space-y-2">
-                <Label htmlFor="cardStatLabel">Libellé personnalisé (optionnel)</Label>
-                <Input
-                  id="cardStatLabel"
-                  value={cardStatLabel}
-                  onChange={(e) => setCardStatLabel(e.target.value)}
-                  placeholder="Ex: Films, Utilisateurs..."
-                />
-                <p className="text-xs text-muted-foreground">
-                  Si vide, le libellé par défaut sera utilisé
-                </p>
-              </div>
-            )}
+              {/* Clé de la statistique (si type = number ou chart ou info, pas pour les types custom) */}
+              {cardStatType &&
+                (cardStatType === "number" ||
+                  cardStatType === "chart" ||
+                  cardStatType === "info") && (
+                  <div className="space-y-2">
+                    <Label htmlFor="cardStatKey">Clé de la statistique</Label>
+                    <Select value={cardStatKey} onValueChange={setCardStatKey}>
+                      <SelectTrigger id="cardStatKey">
+                        <SelectValue placeholder="Sélectionnez une clé" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAvailableStatKeys().map((key) => (
+                          <SelectItem key={key.value} value={key.value}>
+                            {key.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Clé utilisée pour récupérer la valeur depuis l'API
+                    </p>
+                  </div>
+                )}
+
+              {/* Libellé personnalisé */}
+              {cardStatType && (
+                <div className="space-y-2">
+                  <Label htmlFor="cardStatLabel">Libellé personnalisé (optionnel)</Label>
+                  <Input
+                    id="cardStatLabel"
+                    value={cardStatLabel}
+                    onChange={(e) => setCardStatLabel(e.target.value)}
+                    placeholder="Ex: Films, Utilisateurs..."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Si vide, le libellé par défaut sera utilisé
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -680,7 +708,7 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                   <Checkbox
                     id="showKPIs"
                     checked={displayOptions.showKPIs ?? true}
-                    onCheckedChange={(checked) => updateDisplayOption('showKPIs', checked === true)}
+                    onCheckedChange={(checked) => updateDisplayOption("showKPIs", checked === true)}
                   />
                   <Label htmlFor="showKPIs" className="cursor-pointer">
                     Afficher les KPI
@@ -691,7 +719,9 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                   <Checkbox
                     id="showLibraryChart"
                     checked={displayOptions.showLibraryChart ?? true}
-                    onCheckedChange={(checked) => updateDisplayOption('showLibraryChart', checked === true)}
+                    onCheckedChange={(checked) =>
+                      updateDisplayOption("showLibraryChart", checked === true)
+                    }
                   />
                   <Label htmlFor="showLibraryChart" className="cursor-pointer">
                     Afficher le graphique des bibliothèques
@@ -702,7 +732,9 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                   <Checkbox
                     id="showRecentMedia"
                     checked={displayOptions.showRecentMedia ?? true}
-                    onCheckedChange={(checked) => updateDisplayOption('showRecentMedia', checked === true)}
+                    onCheckedChange={(checked) =>
+                      updateDisplayOption("showRecentMedia", checked === true)
+                    }
                   />
                   <Label htmlFor="showRecentMedia" className="cursor-pointer">
                     Afficher les derniers médias ajoutés
@@ -711,15 +743,19 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
               </div>
 
               {/* Options spécifiques pour les KPI (si le template est Plex) */}
-              {selectedTemplate.id === 'plex' && displayOptions.showKPIs && (
+              {selectedTemplate.id === "plex" && displayOptions.showKPIs && (
                 <div className="ml-6 space-y-2 border-l pl-4">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Éléments KPI à afficher :</p>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    Éléments KPI à afficher :
+                  </p>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="showMovies"
                         checked={displayOptions.kpiOptions?.showMovies ?? true}
-                        onCheckedChange={(checked) => updateKPIOption('showMovies', checked === true)}
+                        onCheckedChange={(checked) =>
+                          updateKPIOption("showMovies", checked === true)
+                        }
                       />
                       <Label htmlFor="showMovies" className="cursor-pointer text-sm">
                         Films
@@ -729,7 +765,9 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                       <Checkbox
                         id="showShows"
                         checked={displayOptions.kpiOptions?.showShows ?? true}
-                        onCheckedChange={(checked) => updateKPIOption('showShows', checked === true)}
+                        onCheckedChange={(checked) =>
+                          updateKPIOption("showShows", checked === true)
+                        }
                       />
                       <Label htmlFor="showShows" className="cursor-pointer text-sm">
                         Séries
@@ -739,7 +777,9 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                       <Checkbox
                         id="showEpisodes"
                         checked={displayOptions.kpiOptions?.showEpisodes ?? true}
-                        onCheckedChange={(checked) => updateKPIOption('showEpisodes', checked === true)}
+                        onCheckedChange={(checked) =>
+                          updateKPIOption("showEpisodes", checked === true)
+                        }
                       />
                       <Label htmlFor="showEpisodes" className="cursor-pointer text-sm">
                         Épisodes
@@ -749,7 +789,9 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                       <Checkbox
                         id="showUsers"
                         checked={displayOptions.kpiOptions?.showUsers ?? true}
-                        onCheckedChange={(checked) => updateKPIOption('showUsers', checked === true)}
+                        onCheckedChange={(checked) =>
+                          updateKPIOption("showUsers", checked === true)
+                        }
                       />
                       <Label htmlFor="showUsers" className="cursor-pointer text-sm">
                         Utilisateurs
@@ -759,7 +801,9 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
                       <Checkbox
                         id="showLibraries"
                         checked={displayOptions.kpiOptions?.showLibraries ?? true}
-                        onCheckedChange={(checked) => updateKPIOption('showLibraries', checked === true)}
+                        onCheckedChange={(checked) =>
+                          updateKPIOption("showLibraries", checked === true)
+                        }
                       />
                       <Label htmlFor="showLibraries" className="cursor-pointer text-sm">
                         Bibliothèques
@@ -775,17 +819,19 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
           {selectedTemplateId && (
             <div className="border-t pt-4 mt-4">
               <TemplateSpecificForm
-                app={{
-                  ...(app || {}),
-                  ...templateSpecificData,
-                  url: url,
-                } as App}
+                app={
+                  {
+                    ...(app || {}),
+                    ...templateSpecificData,
+                    url: url,
+                  } as App
+                }
                 templateId={selectedTemplateId}
                 onChange={(data) => {
-                  setTemplateSpecificData(prev => ({
+                  setTemplateSpecificData((prev) => ({
                     ...prev,
-                    ...data
-                  }))
+                    ...data,
+                  }));
                 }}
               />
             </div>
@@ -807,20 +853,20 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
           type="button"
           onClick={() => {
             if (formRef.current) {
-              formRef.current.requestSubmit()
+              formRef.current.requestSubmit();
             }
           }}
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Enregistrement...' : app ? 'Modifier' : 'Ajouter'}
+          {isSubmitting ? "Enregistrement..." : app ? "Modifier" : "Ajouter"}
         </Button>
       </div>
     </>
-  )
+  );
 
   // Si asSheet est true, retourner juste le contenu sans Dialog
   if (asSheet) {
-    return formContent
+    return formContent;
   }
 
   // Sinon, retourner avec Dialog wrapper
@@ -828,16 +874,15 @@ export function AppForm({ open, onOpenChange, app, onSubmit, asSheet = false }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>{app ? 'Modifier l\'application' : 'Ajouter une application'}</DialogTitle>
+          <DialogTitle>{app ? "Modifier l'application" : "Ajouter une application"}</DialogTitle>
           <DialogDescription>
             {app
-              ? 'Modifiez les informations de l\'application'
-              : 'Remplissez les informations pour ajouter une nouvelle application au dashboard'}
+              ? "Modifiez les informations de l'application"
+              : "Remplissez les informations pour ajouter une nouvelle application au dashboard"}
           </DialogDescription>
         </DialogHeader>
         {formContent}
       </DialogContent>
     </Dialog>
-  )
+  );
 }
-

@@ -25,16 +25,19 @@ Configurable single-page dashboard to manage shortcuts to your various applicati
 ### Local Development
 
 1. **Install dependencies** :
+
 ```bash
 npm install
 ```
 
 2. **Start the development server** :
+
 ```bash
 npm run dev
 ```
 
 3. **Open in browser** :
+
 ```
 http://localhost:3000
 ```
@@ -42,21 +45,25 @@ http://localhost:3000
 ### Production with Docker
 
 1. **Build and start with Docker Compose** :
+
 ```bash
 docker-compose up -d --build
 ```
 
 2. **Access the application** :
+
 ```
 http://localhost:3000
 ```
 
 3. **View logs** :
+
 ```bash
 docker-compose logs -f
 ```
 
 4. **Stop the application** :
+
 ```bash
 docker-compose down
 ```
@@ -94,7 +101,7 @@ Xhell-Dash/
    - **Name** : Application name (e.g., "Plex", "Sonarr")
    - **URL** : Full URL to the application
    - **Logo type** : Choose between "Lucide Icon" or "Image URL"
-   - **Logo** : 
+   - **Logo** :
      - If icon: Select an icon from the list
      - If URL: Enter the image URL
    - **Statistics API URL** (optional) : URL to fetch stats from
@@ -124,10 +131,13 @@ To display statistics on an application card:
 3. The API should return a JSON value (number or string) or an object with a `value`, `count`, or `total` property
 
 **Expected API response example** :
+
 ```json
 42
 ```
+
 or
+
 ```json
 {
   "value": 42
