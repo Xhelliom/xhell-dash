@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": ["app/**/*.{ts,tsx}", "auth.ts", "proxy.ts"],
+  "project": ["**/*.{ts,tsx}"],
+  "ignore": ["**/__tests__/**", "components/ui/**"],
+  "ignoreDependencies": [
+    "@tailwindcss/postcss",
+    "tw-animate-css",
+    "tailwindcss",
+    "msw",
+    "@vitest/ui",
+    "@vitest/coverage-v8",
+    "@testing-library/jest-dom",
+    "@testing-library/react"
+  ],
+  "next": {
+    "entry": ["app/**/*.{ts,tsx}", "next.config.ts"]
+  },
+  "vitest": {
+    "entry": ["__tests__/**/*.test.{ts,tsx}", "vitest.config.ts"]
+  }
+}

@@ -35,6 +35,7 @@ cp -r cards/TEMPLATE/* cards/sonarr/
 ### 3. Renommer et adapter les fichiers
 
 Dans chaque fichier, remplacez :
+
 - `Template` → Nom de votre carte (ex: `Sonarr`)
 - `template` → ID de votre carte (ex: `sonarr`)
 - `TemplateStats` → Nom de votre interface de stats (ex: `SonarrStats`)
@@ -42,25 +43,30 @@ Dans chaque fichier, remplacez :
 ### 4. Adapter le code
 
 #### `types.ts`
+
 - Définissez les interfaces pour vos données
 - Adaptez selon la structure de l'API que vous utilisez
 
 #### `route.ts`
+
 - Adaptez la fonction `fetchTemplateStats` pour appeler votre API
 - Modifiez les headers d'authentification selon votre API
 - Transformez les données de l'API au format attendu
 
 #### `panel.tsx`
+
 - Adaptez l'affichage selon vos statistiques
 - Ajoutez/supprimez des sections selon vos besoins
 - Personnalisez les KPI affichés
 
 #### `card-stat.tsx` (optionnel)
+
 - Créez ce fichier seulement si vous avez besoin d'un type custom
 - Définissez votre composant personnalisé
 - Enregistrez-le dans `index.ts` dans `cardStatComponents`
 
 #### `index.ts`
+
 - **IMPORTANT** : Changez l'ID de la carte pour correspondre au nom du dossier
 - **IMPORTANT** : Ne pas importer le handler API (`route.ts`) ici car il utilise `fs` (côté serveur uniquement)
 - Le handler API sera chargé dynamiquement par la route API
@@ -206,16 +212,17 @@ Dans votre fichier `route.ts`, récupérez les valeurs configurées :
 
 ```typescript
 // Récupérer les informations de connexion depuis l'app
-const apiUrl = app.url?.replace(/\/$/, '') || ''
-const apiKey = (app as any).apiKey || (app as any).sonarrApiKey
+const apiUrl = app.url?.replace(/\/$/, "") || "";
+const apiKey = (app as any).apiKey || (app as any).sonarrApiKey;
 
 if (!apiKey) {
   return NextResponse.json(
-    { 
-      error: 'Clé API non configurée. Veuillez configurer la clé API dans les paramètres de l\'application.',
+    {
+      error:
+        "Clé API non configurée. Veuillez configurer la clé API dans les paramètres de l'application.",
     },
     { status: 400 }
-  )
+  );
 }
 ```
 
@@ -226,7 +233,7 @@ if (!apiKey) {
 Ajoutez un import dans `cards/index.ts` :
 
 ```typescript
-import './sonarr'
+import "./sonarr";
 ```
 
 ### 7. Tester
@@ -264,4 +271,3 @@ Voici un exemple rapide pour créer une carte Sonarr :
 ## Besoin d'aide ?
 
 Consultez la carte Plex (`cards/plex/`) comme exemple de référence complète.
-

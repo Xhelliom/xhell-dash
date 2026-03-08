@@ -1,25 +1,17 @@
 /**
  * Composant Skeleton pour les animations de chargement
- * 
+ *
  * Fournit des composants skeleton pour afficher des placeholders
  * pendant le chargement des données
  */
 
-import { cn } from '@/lib/utils'
+import { cn } from "@/lib/utils";
 
 /**
  * Composant Skeleton de base
  */
-function Skeleton({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn('animate-pulse rounded-md bg-muted', className)}
-      {...props}
-    />
-  )
+function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("animate-pulse rounded-md bg-muted", className)} {...props} />;
 }
 
 /**
@@ -34,7 +26,7 @@ export function SkeletonCard() {
       </div>
       <Skeleton className="h-8 w-16 mt-2" />
     </div>
-  )
+  );
 }
 
 /**
@@ -53,7 +45,7 @@ export function SkeletonList({ count = 3 }: { count?: number }) {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 /**
@@ -65,7 +57,7 @@ export function SkeletonChart() {
       <Skeleton className="h-4 w-32" />
       <Skeleton className="h-24 w-full rounded" />
     </div>
-  )
+  );
 }
 
 /**
@@ -77,7 +69,7 @@ export function SkeletonStat() {
       <Skeleton className="h-4 w-24" />
       <Skeleton className="h-6 w-16" />
     </div>
-  )
+  );
 }
 
-export { Skeleton }
+export { Skeleton };

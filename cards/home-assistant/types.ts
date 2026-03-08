@@ -1,6 +1,6 @@
 /**
  * Types TypeScript spécifiques à la carte Home Assistant
- * 
+ *
  * Ces types sont utilisés uniquement par la carte Home Assistant
  * et peuvent être étendus selon les besoins
  */
@@ -10,32 +10,31 @@
  */
 export interface HomeAssistantStats {
   // KPI principaux
-  totalEntities: number
-  activeEntities: number
-  inactiveEntities: number
-  automationsActive: number
-  recentChanges: HomeAssistantRecentChange[]
-  
+  totalEntities: number;
+  activeEntities: number;
+  inactiveEntities: number;
+  automationsActive: number;
+  recentChanges: HomeAssistantRecentChange[];
+
   // Statistiques par domaine
-  domainStats: HomeAssistantDomainStat[]
+  domainStats: HomeAssistantDomainStat[];
 }
 
 /**
  * Interface pour un changement récent
  */
 export interface HomeAssistantRecentChange {
-  entityId: string
-  state: string
-  lastChanged: string
-  friendlyName?: string
+  entityId: string;
+  state: string;
+  lastChanged: string;
+  friendlyName?: string;
 }
 
 /**
  * Interface pour les statistiques d'un domaine
  */
 export interface HomeAssistantDomainStat {
-  domain: string
-  count: number
-  active: number
+  domain: string;
+  count: number;
+  active: number;
 }
-

@@ -1,77 +1,76 @@
 /**
  * Composant SettingsPanel
- * 
+ *
  * Panneau de paramètres généraux du dashboard
  * Permet de configurer le background et d'autres paramètres globaux
  */
 
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { BackgroundSelector } from '@/components/BackgroundSelector'
-import { ThemeSelector } from '@/components/ThemeSelector'
-import { StyleSelector } from '@/components/StyleSelector'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import type { BackgroundEffect, AppConfig, ThemeId, StylePreset } from '@/lib/types'
-import { Loader2, Check } from 'lucide-react'
-import { defaultStylePreset } from '@/lib/style-presets'
-import { applyTheme, resetTheme } from '@/lib/theme-utils'
-import { getThemeById } from '@/lib/themes'
-import { applyStylePreset, resetStyle } from '@/lib/style-utils'
+import { useState, useEffect, useRef } from "react";
+import { BackgroundSelector } from "@/components/BackgroundSelector";
+import { ThemeSelector } from "@/components/ThemeSelector";
+import { StyleSelector } from "@/components/StyleSelector";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import type { BackgroundEffect, AppConfig, ThemeId, StylePreset } from "@/lib/types";
+import { Loader2, Check } from "lucide-react";
+import { defaultStylePreset } from "@/lib/style-presets";
+import { applyTheme, resetTheme } from "@/lib/theme-utils";
+import { getThemeById } from "@/lib/themes";
+import { applyStylePreset, resetStyle } from "@/lib/style-utils";
 
 interface SettingsPanelProps {
   /**
    * Callback appelé quand la configuration change
    */
-  onConfigChange?: () => void
+  onConfigChange?: () => void;
   /**
    * Référence pour exposer la fonction de sauvegarde
    */
-  onSaveRef?: (saveFn: () => Promise<void>) => void
+  onSaveRef?: (saveFn: () => Promise<void>) => void;
 }
 
 /**
  * Panneau de paramètres généraux
  */
 export function SettingsPanel({ onConfigChange, onSaveRef }: SettingsPanelProps) {
-  const [backgroundEffect, setBackgroundEffect] =
-    useState<BackgroundEffect>('mesh-animated')
-  const [theme, setTheme] = useState<ThemeId>('default')
-  const [stylePreset, setStylePreset] = useState<StylePreset>(defaultStylePreset)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [justSaved, setJustSaved] = useState(false)
-  const isInitialLoad = useRef(true)
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [backgroundEffect, setBackgroundEffect] = useState<BackgroundEffect>("mesh-animated");
+  const [theme, setTheme] = useState<ThemeId>("default");
+  const [stylePreset, setStylePreset] = useState<StylePreset>(defaultStylePreset);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const isInitialLoad = useRef(true);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
    * Charge la configuration depuis l'API
    */
   const loadConfig = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const response = await fetch('/api/config')
+      const response = await fetch("/api/config");
       if (response.ok) {
-        const config: AppConfig = await response.json()
-        setBackgroundEffect(config.backgroundEffect || 'mesh-animated')
-        setTheme(config.theme || 'default')
-        setStylePreset(config.stylePreset || defaultStylePreset)
-        isInitialLoad.current = true // Marquer que c'est le chargement initial
+        const config: AppConfig = await response.json();
+        setBackgroundEffect(config.backgroundEffect || "mesh-animated");
+        setTheme(config.theme || "default");
+        setStylePreset(config.stylePreset || defaultStylePreset);
+        isInitialLoad.current = true; // Marquer que c'est le chargement initial
       } else {
-        console.error('Erreur lors du chargement de la configuration')
+        console.error("Erreur lors du chargement de la configuration");
       }
     } catch (error) {
-      console.error('Erreur lors du chargement de la configuration:', error)
+      console.error("Erreur lors du chargement de la configuration:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
       // Réinitialiser le flag après le chargement initial
       setTimeout(() => {
-        isInitialLoad.current = false
-      }, 100)
+        isInitialLoad.current = false;
+      }, 100);
     }
-  }
+  };
 
   /**
    * Sauvegarde la configuration via l'API
@@ -79,26 +78,26 @@ export function SettingsPanel({ onConfigChange, onSaveRef }: SettingsPanelProps)
    * @param skipNotify - Si true, ne pas appeler onConfigChange (pour éviter les doubles notifications)
    */
   const saveConfig = async (silent: boolean = false, skipNotify: boolean = false) => {
-    setIsSaving(true)
+    setIsSaving(true);
     try {
-      const response = await fetch('/api/config', {
-        method: 'PUT',
+      const response = await fetch("/api/config", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           backgroundEffect,
           theme,
           stylePreset,
         }),
-      })
+      });
 
       if (response.ok) {
         // Afficher l'indicateur de sauvegarde réussie
-        setJustSaved(true)
+        setJustSaved(true);
         setTimeout(() => {
-          setJustSaved(false)
-        }, 2000)
+          setJustSaved(false);
+        }, 2000);
 
         // Notifier le parent que la configuration a changé (pour appliquer les styles)
         // IMPORTANT:
@@ -106,88 +105,88 @@ export function SettingsPanel({ onConfigChange, onSaveRef }: SettingsPanelProps)
         // ce qui donne l'impression que l'app "redémarre" après la fermeture du Sheet.
         // Le parent (`app/page.tsx`) sait déjà recharger/appliquer la config via `onConfigChange()`.
         if (!skipNotify && onConfigChange) {
-          onConfigChange()
+          onConfigChange();
         }
       } else {
-        console.error('Erreur lors de la sauvegarde de la configuration')
+        console.error("Erreur lors de la sauvegarde de la configuration");
         if (!silent) {
-          alert('Erreur lors de la sauvegarde de la configuration')
+          alert("Erreur lors de la sauvegarde de la configuration");
         }
       }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde de la configuration:', error)
+      console.error("Erreur lors de la sauvegarde de la configuration:", error);
       if (!silent) {
-        alert('Erreur lors de la sauvegarde de la configuration')
+        alert("Erreur lors de la sauvegarde de la configuration");
       }
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   // Charger la configuration au montage
   useEffect(() => {
-    loadConfig()
-  }, [])
+    loadConfig();
+  }, []);
 
   // Appliquer immédiatement les styles et thème pour aperçu en temps réel
   useEffect(() => {
     // Ne pas appliquer lors du chargement initial
     if (isInitialLoad.current) {
-      return
+      return;
     }
 
     // Appliquer le thème immédiatement
-    if (theme === 'default') {
-      resetTheme()
+    if (theme === "default") {
+      resetTheme();
     } else {
-      const themeToApply = getThemeById(theme)
+      const themeToApply = getThemeById(theme);
       if (themeToApply) {
-        applyTheme(themeToApply)
+        applyTheme(themeToApply);
       }
     }
 
     // Appliquer le preset de style immédiatement
-    applyStylePreset(stylePreset)
-  }, [theme, stylePreset])
+    applyStylePreset(stylePreset);
+  }, [theme, stylePreset]);
 
   // Sauvegarde automatique avec debounce (500ms)
   useEffect(() => {
     // Ne pas sauvegarder lors du chargement initial
     if (isInitialLoad.current) {
-      return
+      return;
     }
 
     // Annuler la sauvegarde précédente si elle existe
     if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current)
+      clearTimeout(saveTimeoutRef.current);
     }
 
     // Programmer la sauvegarde après 500ms d'inactivité
     saveTimeoutRef.current = setTimeout(() => {
-      saveConfig(true, false) // Sauvegarder en mode silencieux mais notifier le parent pour appliquer les changements
-    }, 500)
+      saveConfig(true, false); // Sauvegarder en mode silencieux mais notifier le parent pour appliquer les changements
+    }, 500);
 
     // Nettoyage
     return () => {
       if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current)
+        clearTimeout(saveTimeoutRef.current);
       }
-    }
-  }, [backgroundEffect, theme, stylePreset])
+    };
+  }, [backgroundEffect, theme, stylePreset]);
 
   // Exposer la fonction de sauvegarde au parent (pour compatibilité avec le bouton)
   useEffect(() => {
     if (onSaveRef) {
-      onSaveRef(() => saveConfig(false)) // Mode non-silencieux pour le bouton
+      onSaveRef(() => saveConfig(false)); // Mode non-silencieux pour le bouton
     }
-  }, [onSaveRef])
+  }, [onSaveRef]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
-    )
+    );
   }
 
   return (
@@ -203,30 +202,21 @@ export function SettingsPanel({ onConfigChange, onSaveRef }: SettingsPanelProps)
 
       {/* Sélecteur de thème de couleur */}
       <div className="space-y-4">
-        <ThemeSelector
-          value={theme}
-          onValueChange={setTheme}
-        />
+        <ThemeSelector value={theme} onValueChange={setTheme} />
       </div>
 
       <Separator />
 
       {/* Sélecteur de style */}
       <div className="space-y-4">
-        <StyleSelector
-          value={stylePreset}
-          onValueChange={setStylePreset}
-        />
+        <StyleSelector value={stylePreset} onValueChange={setStylePreset} />
       </div>
 
       <Separator />
 
       {/* Sélecteur de background */}
       <div className="space-y-4">
-        <BackgroundSelector
-          value={backgroundEffect}
-          onValueChange={setBackgroundEffect}
-        />
+        <BackgroundSelector value={backgroundEffect} onValueChange={setBackgroundEffect} />
       </div>
 
       <Separator />
@@ -250,7 +240,5 @@ export function SettingsPanel({ onConfigChange, onSaveRef }: SettingsPanelProps)
         )}
       </div>
     </div>
-  )
+  );
 }
-
-

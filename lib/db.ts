@@ -1,277 +1,289 @@
 /**
  * Système de persistance JSONDB
- * 
+ *
  * Ce module gère la lecture et l'écriture des applications dans un fichier JSON
  * situé dans le dossier data/apps.json
  */
 
-import { promises as fs } from 'fs'
-import path from 'path'
-import type { App, Widget, AppConfig } from './types'
-import { defaultStylePreset } from './style-presets'
-import { encryptSensitiveFields, decryptSensitiveFields } from './encryption'
-import { resolveTokenFromEnv } from './env-tokens'
+import { promises as fs } from "fs";
+import path from "path";
+import type { App, Widget, AppConfig } from "./types";
+import { defaultStylePreset } from "./style-presets";
+import { encryptSensitiveFields, decryptSensitiveFields } from "./encryption";
+import { resolveTokenFromEnv } from "./env-tokens";
 
-// Chemin vers le fichier de données
-const DATA_DIR = path.join(process.cwd(), 'data')
-const APPS_FILE = path.join(DATA_DIR, 'apps.json')
-const WIDGETS_FILE = path.join(DATA_DIR, 'widgets.json')
-const CONFIG_FILE = path.join(DATA_DIR, 'config.json')
+// Chemins vers les fichiers de données (fonctions pour supporter le mocking de process.cwd())
+function getDataDir() {
+  return path.join(process.cwd(), "data");
+}
+function getAppsFile() {
+  return path.join(getDataDir(), "apps.json");
+}
+function getWidgetsFile() {
+  return path.join(getDataDir(), "widgets.json");
+}
+function getConfigFile() {
+  return path.join(getDataDir(), "config.json");
+}
 
 /**
  * Lit la liste des applications depuis le fichier JSON
- * 
+ *
  * @returns Promise<App[]> - Liste des applications triée par ordre
  * @throws Error si le fichier ne peut pas être lu ou si les données sont invalides
  */
 export async function readApps(): Promise<App[]> {
   try {
     // Vérifier si le fichier existe
-    await fs.access(APPS_FILE)
-    
+    await fs.access(getAppsFile());
+
     // Lire le contenu du fichier
-    const fileContent = await fs.readFile(APPS_FILE, 'utf-8')
-    
+    const fileContent = await fs.readFile(getAppsFile(), "utf-8");
+
     // Parser le JSON
-    const apps = JSON.parse(fileContent) as App[]
-    
+    const apps = JSON.parse(fileContent) as App[];
+
     // Valider que c'est bien un tableau
     if (!Array.isArray(apps)) {
-      throw new Error('Les données doivent être un tableau')
+      throw new Error("Les données doivent être un tableau");
     }
-    
+
     // Déchiffrer les champs sensibles et résoudre les variables d'environnement
-    const decryptedApps = apps.map(app => {
+    const decryptedApps = apps.map((app) => {
       // Déchiffrer les tokens sensibles
-      const decrypted = decryptSensitiveFields(app)
+      const decrypted = decryptSensitiveFields(app);
       // Résoudre les variables d'environnement pour les tokens
-      return resolveTokenFromEnv(decrypted)
-    })
-    
+      return resolveTokenFromEnv(decrypted);
+    });
+
     // Trier les apps par ordre (si défini), sinon garder l'ordre d'origine
     return decryptedApps.sort((a, b) => {
       // Si les deux ont un ordre, trier par ordre
       if (a.order !== undefined && b.order !== undefined) {
-        return a.order - b.order
+        return a.order - b.order;
       }
       // Si seul a a un ordre, il vient en premier
       if (a.order !== undefined) {
-        return -1
+        return -1;
       }
       // Si seul b a un ordre, il vient en premier
       if (b.order !== undefined) {
-        return 1
+        return 1;
       }
       // Sinon, garder l'ordre d'origine
-      return 0
-    })
+      return 0;
+    });
   } catch (error: any) {
     // Si le fichier n'existe pas, retourner un tableau vide
-    if (error.code === 'ENOENT') {
-      return []
+    if (error.code === "ENOENT") {
+      return [];
     }
-    
+
     // Pour les autres erreurs, les propager
-    throw error
+    throw error;
   }
 }
 
 /**
  * Écrit la liste des applications dans le fichier JSON
- * 
+ *
  * @param apps - Liste des applications à sauvegarder
  * @throws Error si le fichier ne peut pas être écrit
  */
 export async function writeApps(apps: App[]): Promise<void> {
   try {
     // Créer le dossier data s'il n'existe pas
-    await fs.mkdir(DATA_DIR, { recursive: true })
-    
+    await fs.mkdir(getDataDir(), { recursive: true });
+
     // Chiffrer les champs sensibles avant de sauvegarder
-    const encryptedApps = apps.map(app => encryptSensitiveFields(app))
-    
+    const encryptedApps = apps.map((app) => encryptSensitiveFields(app));
+
     // Convertir en JSON avec indentation pour la lisibilité
-    const jsonContent = JSON.stringify(encryptedApps, null, 2)
-    
+    const jsonContent = JSON.stringify(encryptedApps, null, 2);
+
     // Écrire dans le fichier
-    await fs.writeFile(APPS_FILE, jsonContent, 'utf-8')
+    await fs.writeFile(getAppsFile(), jsonContent, "utf-8");
   } catch (error) {
     // Propager l'erreur avec un message plus clair
-    throw new Error(`Impossible d'écrire les données : ${error}`)
+    throw new Error(`Impossible d'écrire les données : ${error}`);
   }
 }
 
 /**
  * Génère un identifiant unique pour une nouvelle application
- * 
+ *
  * @returns string - Identifiant unique basé sur le timestamp et un nombre aléatoire
  */
 export function generateAppId(): string {
-  return `app_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  return `app_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 /**
  * Lit la liste des widgets depuis le fichier JSON
- * 
+ *
  * @returns Promise<Widget[]> - Liste des widgets triée par ordre
  * @throws Error si le fichier ne peut pas être lu ou si les données sont invalides
  */
 export async function readWidgets(): Promise<Widget[]> {
   try {
     // Vérifier si le fichier existe
-    await fs.access(WIDGETS_FILE)
-    
+    await fs.access(getWidgetsFile());
+
     // Lire le contenu du fichier
-    const fileContent = await fs.readFile(WIDGETS_FILE, 'utf-8')
-    
+    const fileContent = await fs.readFile(getWidgetsFile(), "utf-8");
+
     // Parser le JSON
-    const widgets = JSON.parse(fileContent) as Widget[]
-    
+    const widgets = JSON.parse(fileContent) as Widget[];
+
     // Valider que c'est bien un tableau
     if (!Array.isArray(widgets)) {
-      throw new Error('Les données doivent être un tableau')
+      throw new Error("Les données doivent être un tableau");
     }
-    
+
     // Trier les widgets par ordre (si défini), sinon garder l'ordre d'origine
     return widgets.sort((a, b) => {
       // Si les deux ont un ordre, trier par ordre
       if (a.order !== undefined && b.order !== undefined) {
-        return a.order - b.order
+        return a.order - b.order;
       }
       // Si seul a a un ordre, il vient en premier
       if (a.order !== undefined) {
-        return -1
+        return -1;
       }
       // Si seul b a un ordre, il vient en premier
       if (b.order !== undefined) {
-        return 1
+        return 1;
       }
       // Sinon, garder l'ordre d'origine
-      return 0
-    })
+      return 0;
+    });
   } catch (error: any) {
     // Si le fichier n'existe pas, retourner un tableau vide
-    if (error.code === 'ENOENT') {
-      return []
+    if (error.code === "ENOENT") {
+      return [];
     }
-    
+
     // Pour les autres erreurs, les propager
-    throw error
+    throw error;
   }
 }
 
 /**
  * Écrit la liste des widgets dans le fichier JSON
- * 
+ *
  * @param widgets - Liste des widgets à sauvegarder
  * @throws Error si le fichier ne peut pas être écrit
  */
 export async function writeWidgets(widgets: Widget[]): Promise<void> {
   try {
     // Créer le dossier data s'il n'existe pas
-    await fs.mkdir(DATA_DIR, { recursive: true })
-    
+    await fs.mkdir(getDataDir(), { recursive: true });
+
     // Convertir en JSON avec indentation pour la lisibilité
-    const jsonContent = JSON.stringify(widgets, null, 2)
-    
+    const jsonContent = JSON.stringify(widgets, null, 2);
+
     // Écrire dans le fichier
-    await fs.writeFile(WIDGETS_FILE, jsonContent, 'utf-8')
+    await fs.writeFile(getWidgetsFile(), jsonContent, "utf-8");
   } catch (error) {
     // Propager l'erreur avec un message plus clair
-    throw new Error(`Impossible d'écrire les données : ${error}`)
+    throw new Error(`Impossible d'écrire les données : ${error}`);
   }
 }
 
 /**
  * Génère un identifiant unique pour un nouveau widget
- * 
+ *
  * @returns string - Identifiant unique basé sur le timestamp et un nombre aléatoire
  */
 export function generateWidgetId(): string {
-  return `widget_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  return `widget_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 /**
  * Lit la configuration de l'application depuis le fichier JSON
- * 
+ *
  * @returns Promise<AppConfig> - Configuration de l'application avec valeurs par défaut si le fichier n'existe pas
  * @throws Error si le fichier existe mais ne peut pas être lu ou si les données sont invalides
  */
 export async function readConfig(): Promise<AppConfig> {
   try {
     // Vérifier si le fichier existe
-    await fs.access(CONFIG_FILE)
-    
+    await fs.access(getConfigFile());
+
     // Lire le contenu du fichier
-    const fileContent = await fs.readFile(CONFIG_FILE, 'utf-8')
-    
+    const fileContent = await fs.readFile(getConfigFile(), "utf-8");
+
     // Parser le JSON
-    const config = JSON.parse(fileContent) as AppConfig
-    
+    const config = JSON.parse(fileContent) as AppConfig;
+
     // Valider que c'est bien un objet
-    if (!config || typeof config !== 'object') {
-      throw new Error('Les données doivent être un objet')
+    if (!config || typeof config !== "object") {
+      throw new Error("Les données doivent être un objet");
     }
-    
+
     // Migration: convertir spacing en density si présent
-    let stylePreset = config.stylePreset || defaultStylePreset
-    if (stylePreset && typeof stylePreset === 'object' && 'spacing' in stylePreset && !('density' in stylePreset)) {
+    let stylePreset = config.stylePreset || defaultStylePreset;
+    if (
+      stylePreset &&
+      typeof stylePreset === "object" &&
+      "spacing" in stylePreset &&
+      !("density" in stylePreset)
+    ) {
       // Migration depuis l'ancienne structure (spacing -> density)
-      const spacingToDensity: Record<string, 'compact' | 'normal' | 'comfortable'> = {
-        'compact': 'compact',
-        'normal': 'normal',
-        'spacious': 'comfortable',
-      }
-      const oldSpacing = (stylePreset as any).spacing as string
-      const newDensity = spacingToDensity[oldSpacing] || 'normal'
+      const spacingToDensity: Record<string, "compact" | "normal" | "comfortable"> = {
+        compact: "compact",
+        normal: "normal",
+        spacious: "comfortable",
+      };
+      const oldSpacing = (stylePreset as any).spacing as string;
+      const newDensity = spacingToDensity[oldSpacing] || "normal";
       stylePreset = {
         ...(stylePreset as Record<string, any>),
         density: newDensity,
-      } as any
+      } as any;
       // Supprimer l'ancienne propriété spacing
-      delete (stylePreset as any).spacing
+      delete (stylePreset as any).spacing;
     }
-    
+
     // Retourner la configuration avec valeurs par défaut si certains champs manquent
     return {
-      backgroundEffect: config.backgroundEffect || 'mesh-animated',
-      theme: config.theme || 'default',
+      backgroundEffect: config.backgroundEffect || "mesh-animated",
+      theme: config.theme || "default",
       stylePreset: stylePreset || defaultStylePreset,
-    }
+    };
   } catch (error: any) {
     // Si le fichier n'existe pas, retourner la configuration par défaut
-    if (error.code === 'ENOENT') {
+    if (error.code === "ENOENT") {
       return {
-        backgroundEffect: 'mesh-animated',
-        theme: 'default',
+        backgroundEffect: "mesh-animated",
+        theme: "default",
         stylePreset: defaultStylePreset,
-      }
+      };
     }
-    
+
     // Pour les autres erreurs, les propager
-    throw error
+    throw error;
   }
 }
 
 /**
  * Écrit la configuration de l'application dans le fichier JSON
- * 
+ *
  * @param config - Configuration à sauvegarder
  * @throws Error si le fichier ne peut pas être écrit
  */
 export async function writeConfig(config: AppConfig): Promise<void> {
   try {
     // Créer le dossier data s'il n'existe pas
-    await fs.mkdir(DATA_DIR, { recursive: true })
-    
+    await fs.mkdir(getDataDir(), { recursive: true });
+
     // Convertir en JSON avec indentation pour la lisibilité
-    const jsonContent = JSON.stringify(config, null, 2)
-    
+    const jsonContent = JSON.stringify(config, null, 2);
+
     // Écrire dans le fichier
-    await fs.writeFile(CONFIG_FILE, jsonContent, 'utf-8')
+    await fs.writeFile(getConfigFile(), jsonContent, "utf-8");
   } catch (error) {
     // Propager l'erreur avec un message plus clair
-    throw new Error(`Impossible d'écrire la configuration : ${error}`)
+    throw new Error(`Impossible d'écrire la configuration : ${error}`);
   }
 }
-

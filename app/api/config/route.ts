@@ -1,15 +1,15 @@
 /**
  * API Route pour la configuration globale de l'application
- * 
+ *
  * Endpoints :
  * - GET /api/config : Récupère la configuration actuelle
  * - PUT /api/config : Met à jour la configuration
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
-import { readConfig, writeConfig } from '@/lib/db'
-import type { AppConfig } from '@/lib/types'
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { readConfig, writeConfig } from "@/lib/db";
+import type { AppConfig } from "@/lib/types";
 
 /**
  * GET /api/config
@@ -17,14 +17,14 @@ import type { AppConfig } from '@/lib/types'
  */
 export async function GET() {
   try {
-    const config = await readConfig()
-    return NextResponse.json(config)
+    const config = await readConfig();
+    return NextResponse.json(config);
   } catch (error: any) {
-    console.error('Erreur lors de la lecture de la configuration:', error)
+    console.error("Erreur lors de la lecture de la configuration:", error);
     return NextResponse.json(
-      { error: 'Erreur lors de la lecture de la configuration' },
+      { error: "Erreur lors de la lecture de la configuration" },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -35,100 +35,90 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     // Vérifier l'authentification et le rôle admin
-    const session = await auth()
-    
+    const session = await auth();
+
     if (!session || !session.user) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
     // @ts-expect-error - champ custom role
-    const userRole = session.user.role as string | undefined
+    const userRole = session.user.role as string | undefined;
 
-    if (userRole !== 'admin') {
-      return NextResponse.json(
-        { error: 'Accès refusé. Administrateur requis.' },
-        { status: 403 }
-      )
+    if (userRole !== "admin") {
+      return NextResponse.json({ error: "Accès refusé. Administrateur requis." }, { status: 403 });
     }
 
-    const body = await request.json()
-    const config = body as Partial<AppConfig>
+    const body = await request.json();
+    const config = body as Partial<AppConfig>;
 
     // Lire la configuration actuelle
-    const currentConfig = await readConfig()
+    const currentConfig = await readConfig();
 
     // Migration: convertir spacing en density si présent dans les nouvelles valeurs
-    let mergedConfig = { ...config }
-    if (mergedConfig.stylePreset && typeof mergedConfig.stylePreset === 'object' && 'spacing' in mergedConfig.stylePreset && !('density' in mergedConfig.stylePreset)) {
-      const spacingToDensity: Record<string, 'compact' | 'normal' | 'comfortable'> = {
-        'compact': 'compact',
-        'normal': 'normal',
-        'spacious': 'comfortable',
-      }
-      const oldSpacing = (mergedConfig.stylePreset as any).spacing as string
-      const newDensity = spacingToDensity[oldSpacing] || 'normal'
+    const mergedConfig = { ...config };
+    if (
+      mergedConfig.stylePreset &&
+      typeof mergedConfig.stylePreset === "object" &&
+      "spacing" in mergedConfig.stylePreset &&
+      !("density" in mergedConfig.stylePreset)
+    ) {
+      const spacingToDensity: Record<string, "compact" | "normal" | "comfortable"> = {
+        compact: "compact",
+        normal: "normal",
+        spacious: "comfortable",
+      };
+      const oldSpacing = (mergedConfig.stylePreset as any).spacing as string;
+      const newDensity = spacingToDensity[oldSpacing] || "normal";
       mergedConfig.stylePreset = {
         ...(mergedConfig.stylePreset as object),
         density: newDensity,
-      } as any
-      delete (mergedConfig.stylePreset as any).spacing
+      } as any;
+      delete (mergedConfig.stylePreset as any).spacing;
     }
 
     // Fusionner avec les nouvelles valeurs
     const updatedConfig: AppConfig = {
       ...currentConfig,
       ...mergedConfig,
-    }
+    };
 
     // Valider que backgroundEffect est valide si fourni
     const validEffects = [
-      'none',
-      'gradient-radial',
-      'gradient-linear',
-      'gradient-mesh',
-      'gradient-animated',
-      'glow',
-      'grid-pattern',
-      'dot-pattern',
-      'noise',
-      'mesh-animated',
-      'shimmer',
-      'diamond-pattern',
-      'grid-svg',
-      'dots-svg',
-      'waves-pattern',
-      'hexagon-pattern',
-      'crosshatch-pattern',
-    ]
+      "none",
+      "gradient-radial",
+      "gradient-linear",
+      "gradient-mesh",
+      "gradient-animated",
+      "glow",
+      "grid-pattern",
+      "dot-pattern",
+      "noise",
+      "mesh-animated",
+      "shimmer",
+      "diamond-pattern",
+      "grid-svg",
+      "dots-svg",
+      "waves-pattern",
+      "hexagon-pattern",
+      "crosshatch-pattern",
+    ];
 
-    if (
-      updatedConfig.backgroundEffect &&
-      !validEffects.includes(updatedConfig.backgroundEffect)
-    ) {
-      return NextResponse.json(
-        { error: 'Effet de background invalide' },
-        { status: 400 }
-      )
+    if (updatedConfig.backgroundEffect && !validEffects.includes(updatedConfig.backgroundEffect)) {
+      return NextResponse.json({ error: "Effet de background invalide" }, { status: 400 });
     }
 
     // Valider que theme est valide si fourni
-    const validThemes = ['default', 'violet', 'caramel']
+    const validThemes = ["default", "violet", "caramel"];
     if (updatedConfig.theme && !validThemes.includes(updatedConfig.theme)) {
-      return NextResponse.json(
-        { error: 'Thème invalide' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Thème invalide" }, { status: 400 });
     }
 
     // Valider que stylePreset est valide si fourni
     if (updatedConfig.stylePreset) {
-      const validRadius = ['small', 'medium', 'large']
-      const validShadow = ['subtle', 'pronounced']
-      const validFont = ['sans', 'serif', 'mono']
-      const validDensity = ['compact', 'normal', 'comfortable']
+      const validRadius = ["small", "medium", "large"];
+      const validShadow = ["subtle", "pronounced"];
+      const validFont = ["sans", "serif", "mono"];
+      const validDensity = ["compact", "normal", "comfortable"];
 
       if (
         !validRadius.includes(updatedConfig.stylePreset.radius) ||
@@ -136,24 +126,19 @@ export async function PUT(request: NextRequest) {
         !validFont.includes(updatedConfig.stylePreset.font) ||
         !validDensity.includes(updatedConfig.stylePreset.density)
       ) {
-        return NextResponse.json(
-          { error: 'Preset de style invalide' },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: "Preset de style invalide" }, { status: 400 });
       }
     }
 
     // Sauvegarder la configuration
-    await writeConfig(updatedConfig)
+    await writeConfig(updatedConfig);
 
-    return NextResponse.json(updatedConfig)
+    return NextResponse.json(updatedConfig);
   } catch (error: any) {
-    console.error('Erreur lors de la mise à jour de la configuration:', error)
+    console.error("Erreur lors de la mise à jour de la configuration:", error);
     return NextResponse.json(
-      { error: 'Erreur lors de la mise à jour de la configuration' },
+      { error: "Erreur lors de la mise à jour de la configuration" },
       { status: 500 }
-    )
+    );
   }
 }
-
-

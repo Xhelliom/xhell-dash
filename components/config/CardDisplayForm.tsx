@@ -1,32 +1,32 @@
 /**
  * Composant CardDisplayForm
- * 
+ *
  * Formulaire pour configurer l'affichage de la statistique sur la carte :
  * - Type de statistique (number/chart/custom)
  * - Clé de statistique
  * - Libellé personnalisé
  */
 
-'use client'
+"use client";
 
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import type { App, CreateAppInput, CardStatType, CardStatConfig } from '@/lib/types'
-import { getCardStatTypes } from '@/lib/card-stat-types'
-import { getTemplateById } from '@/lib/stats-templates'
-import { normalizeCardStatConfig } from '@/lib/card-stat-utils'
-import { cardRegistry } from '@/lib/card-registry'
+} from "@/components/ui/select";
+import type { App, CreateAppInput, CardStatType, CardStatConfig } from "@/lib/types";
+import { getCardStatTypes } from "@/lib/card-stat-types";
+import { getTemplateById } from "@/lib/stats-templates";
+import { normalizeCardStatConfig } from "@/lib/card-stat-utils";
+import { cardRegistry } from "@/lib/card-registry";
 
 interface CardDisplayFormProps {
-  app?: App | null
-  onChange: (data: Partial<CreateAppInput>) => void
+  app?: App | null;
+  onChange: (data: Partial<CreateAppInput>) => void;
 }
 
 /**
@@ -34,22 +34,22 @@ interface CardDisplayFormProps {
  * Récupère dynamiquement depuis le registre de cartes
  */
 function getAvailableStatKeys(templateId?: string): { value: string; label: string }[] {
-  return cardRegistry.getAvailableStatKeys(templateId)
+  return cardRegistry.getAvailableStatKeys(templateId);
 }
 
 export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
-  const templateId = app?.statsConfig?.templateId
+  const templateId = app?.statsConfig?.templateId;
   // Normaliser la config pour gérer les anciennes données
-  const cardStatConfig = normalizeCardStatConfig(app?.statsConfig?.cardStat)
-  
+  const cardStatConfig = normalizeCardStatConfig(app?.statsConfig?.cardStat);
+
   // Récupérer les types disponibles selon le template
-  const availableTypes = getCardStatTypes(templateId)
-  
+  const availableTypes = getCardStatTypes(templateId);
+
   // État local pour les valeurs du formulaire
-  const cardStatType: CardStatType | '' = cardStatConfig?.type || ''
-  const customType = cardStatConfig?.customType || ''
-  const cardStatKey = cardStatConfig?.key || ''
-  const cardStatLabel = cardStatConfig?.label || ''
+  const cardStatType: CardStatType | "" = cardStatConfig?.type || "";
+  const customType = cardStatConfig?.customType || "";
+  const cardStatKey = cardStatConfig?.key || "";
+  const cardStatLabel = cardStatConfig?.label || "";
 
   /**
    * Met à jour la configuration de la statistique de carte
@@ -61,7 +61,7 @@ export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
       key: cardStatKey,
       label: cardStatLabel,
       ...updates,
-    }
+    };
 
     // Si le type est vide, supprimer la config
     if (!newCardStat.type) {
@@ -70,8 +70,8 @@ export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
           ...app?.statsConfig,
           cardStat: undefined,
         },
-      })
-      return
+      });
+      return;
     }
 
     onChange({
@@ -79,61 +79,61 @@ export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
         ...app?.statsConfig,
         cardStat: newCardStat,
       },
-    })
-  }
+    });
+  };
 
   /**
    * Gère le changement de type
    */
   const handleTypeChange = (value: string) => {
-    if (value === 'none') {
-      updateCardStat({ type: '' as CardStatType })
-      return
+    if (value === "none") {
+      updateCardStat({ type: "" as CardStatType });
+      return;
     }
 
-    const newType = value as CardStatType
-    const updates: Partial<CardStatConfig> = { type: newType }
+    const newType = value as CardStatType;
+    const updates: Partial<CardStatConfig> = { type: newType };
 
     // Si c'est un type custom, déterminer le customType
     // Note: 'info' est un type commun, pas un type custom
-    if (newType === 'custom') {
+    if (newType === "custom") {
       // Trouver le premier type custom disponible (exclure les types communs)
-      const customTypes = availableTypes.filter(t => !['number', 'chart', 'info'].includes(t))
+      const customTypes = availableTypes.filter((t) => !["number", "chart", "info"].includes(t));
       if (customTypes.length > 0) {
-        updates.customType = customTypes[0]
+        updates.customType = customTypes[0];
       }
     } else {
-      updates.customType = undefined
+      updates.customType = undefined;
     }
 
-    updateCardStat(updates)
-  }
+    updateCardStat(updates);
+  };
 
   /**
    * Gère le changement de customType
    */
   const handleCustomTypeChange = (value: string) => {
-    updateCardStat({ customType: value })
-  }
+    updateCardStat({ customType: value });
+  };
 
   /**
    * Gère le changement de clé
    */
   const handleKeyChange = (value: string) => {
-    updateCardStat({ key: value })
-  }
+    updateCardStat({ key: value });
+  };
 
   /**
    * Gère le changement de libellé
    */
   const handleLabelChange = (value: string) => {
-    updateCardStat({ label: value })
-  }
+    updateCardStat({ label: value });
+  };
 
   // Séparer les types communs et custom
   // Les types communs sont : 'number', 'chart', 'info'
-  const commonTypes = availableTypes.filter(t => ['number', 'chart', 'info'].includes(t))
-  const customTypes = availableTypes.filter(t => !['number', 'chart', 'info'].includes(t))
+  const commonTypes = availableTypes.filter((t) => ["number", "chart", "info"].includes(t));
+  const customTypes = availableTypes.filter((t) => !["number", "chart", "info"].includes(t));
 
   return (
     <div className="space-y-6">
@@ -148,10 +148,7 @@ export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
         {/* Type de statistique */}
         <div className="space-y-2">
           <Label htmlFor="cardStatType">Type d'affichage</Label>
-          <Select
-            value={cardStatType || 'none'}
-            onValueChange={handleTypeChange}
-          >
+          <Select value={cardStatType || "none"} onValueChange={handleTypeChange}>
             <SelectTrigger id="cardStatType">
               <SelectValue placeholder="Aucun" />
             </SelectTrigger>
@@ -159,18 +156,19 @@ export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
               <SelectItem value="none">Aucun</SelectItem>
               {commonTypes.map((type) => (
                 <SelectItem key={type} value={type}>
-                  {type === 'number' 
-                    ? 'Nombre' 
-                    : type === 'chart' 
-                    ? 'Graphique (courbe)' 
-                    : type === 'info'
-                    ? 'Information (texte)'
-                    : type}
+                  {type === "number"
+                    ? "Nombre"
+                    : type === "chart"
+                      ? "Graphique (courbe)"
+                      : type === "info"
+                        ? "Information (texte)"
+                        : type}
                 </SelectItem>
               ))}
               {customTypes.length > 0 && (
                 <SelectItem value="custom">
-                  Personnalisé ({customTypes.length} type{customTypes.length > 1 ? 's' : ''} disponible{customTypes.length > 1 ? 's' : ''})
+                  Personnalisé ({customTypes.length} type{customTypes.length > 1 ? "s" : ""}{" "}
+                  disponible{customTypes.length > 1 ? "s" : ""})
                 </SelectItem>
               )}
             </SelectContent>
@@ -178,20 +176,17 @@ export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
         </div>
 
         {/* Type personnalisé (si custom est sélectionné) */}
-        {cardStatType === 'custom' && customTypes.length > 0 && (
+        {cardStatType === "custom" && customTypes.length > 0 && (
           <div className="space-y-2">
             <Label htmlFor="customType">Type personnalisé</Label>
-            <Select
-              value={customType || customTypes[0]}
-              onValueChange={handleCustomTypeChange}
-            >
+            <Select value={customType || customTypes[0]} onValueChange={handleCustomTypeChange}>
               <SelectTrigger id="customType">
                 <SelectValue placeholder="Sélectionnez un type" />
               </SelectTrigger>
               <SelectContent>
                 {customTypes.map((type) => (
                   <SelectItem key={type} value={type}>
-                    {type === 'plex-recent' ? 'Images des 3 derniers ajouts (Plex)' : type}
+                    {type === "plex-recent" ? "Images des 3 derniers ajouts (Plex)" : type}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -201,13 +196,10 @@ export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
 
         {/* Clé de la statistique (si type = number, chart ou info) */}
         {/* Le type 'info' a aussi besoin d'une clé pour savoir quelle donnée afficher */}
-        {cardStatType && (cardStatType !== 'custom' || customType === 'info') && (
+        {cardStatType && (cardStatType !== "custom" || customType === "info") && (
           <div className="space-y-2">
             <Label htmlFor="cardStatKey">Clé de la statistique</Label>
-            <Select
-              value={cardStatKey}
-              onValueChange={handleKeyChange}
-            >
+            <Select value={cardStatKey} onValueChange={handleKeyChange}>
               <SelectTrigger id="cardStatKey">
                 <SelectValue placeholder="Sélectionnez une clé" />
               </SelectTrigger>
@@ -242,6 +234,5 @@ export function CardDisplayForm({ app, onChange }: CardDisplayFormProps) {
         )}
       </div>
     </div>
-  )
+  );
 }
-

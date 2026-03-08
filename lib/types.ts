@@ -1,6 +1,6 @@
 /**
  * Types TypeScript pour l'application dashboard
- * 
+ *
  * Ce fichier définit les interfaces et types utilisés dans toute l'application
  */
 
@@ -11,21 +11,21 @@ import type {
   ShadowPreset,
   FontPreset,
   DensityPreset,
-} from './style-presets'
+} from "./style-presets";
 
 // Ré-exporter les types pour faciliter l'importation
-export type { RadiusPreset, ShadowPreset, FontPreset, DensityPreset, StylePreset }
+export type { RadiusPreset, ShadowPreset, FontPreset, DensityPreset, StylePreset };
 
 /**
  * Type de logo pour une application
  * - 'icon' : utilise une icône Lucide React
  * - 'url' : utilise une URL d'image
  */
-export type LogoType = 'icon' | 'url'
+export type LogoType = "icon" | "url";
 
 /**
  * Interface représentant une application dans le dashboard
- * 
+ *
  * Chaque application contient :
  * - id : identifiant unique généré automatiquement
  * - name : nom affiché de l'application
@@ -37,110 +37,110 @@ export type LogoType = 'icon' | 'url'
  * - statValue : valeur actuelle de la statistique (mise à jour via API)
  */
 export interface App {
-  id: string
-  name: string
-  url: string
-  logo: string
-  logoType: LogoType
-  statApiUrl?: string
-  statLabel?: string
-  statValue?: string | number
+  id: string;
+  name: string;
+  url: string;
+  logo: string;
+  logoType: LogoType;
+  statApiUrl?: string;
+  statLabel?: string;
+  statValue?: string | number;
   // Ordre d'affichage dans le dashboard
-  order?: number
+  order?: number;
   // Champs spécifiques pour Plex
-  plexToken?: string
-  plexServerUrl?: string
+  plexToken?: string;
+  plexServerUrl?: string;
   // Configuration des statistiques
-  statsConfig?: StatsConfig
+  statsConfig?: StatsConfig;
 }
 
 /**
  * Interface pour créer une nouvelle application (sans l'id qui sera généré)
  */
 export interface CreateAppInput {
-  name: string
-  url: string
-  logo: string
-  logoType: LogoType
-  statApiUrl?: string
-  statLabel?: string
-  order?: number
-  plexToken?: string
-  plexServerUrl?: string
-  statsConfig?: StatsConfig
+  name: string;
+  url: string;
+  logo: string;
+  logoType: LogoType;
+  statApiUrl?: string;
+  statLabel?: string;
+  order?: number;
+  plexToken?: string;
+  plexServerUrl?: string;
+  statsConfig?: StatsConfig;
 }
 
 /**
  * Interface pour mettre à jour une application (tous les champs sont optionnels sauf l'id)
  */
 export interface UpdateAppInput {
-  name?: string
-  url?: string
-  logo?: string
-  logoType?: LogoType
-  statApiUrl?: string
-  statLabel?: string
-  statValue?: string | number
-  order?: number
-  plexToken?: string
-  plexServerUrl?: string
-  statsConfig?: StatsConfig
+  name?: string;
+  url?: string;
+  logo?: string;
+  logoType?: LogoType;
+  statApiUrl?: string;
+  statLabel?: string;
+  statValue?: string | number;
+  order?: number;
+  plexToken?: string;
+  plexServerUrl?: string;
+  statsConfig?: StatsConfig;
 }
 
 /**
  * Types de statistiques supportés par l'application
  */
-export type StatsType = 'generic' | 'plex' | 'sonarr'
+export type StatsType = "generic" | "plex" | "sonarr";
 
 /**
  * Interface pour les statistiques Plex
  */
 export interface PlexStats {
   // KPI principaux
-  totalMovies: number
-  totalShows: number
-  totalEpisodes: number
-  totalUsers: number
-  totalLibraries: number
-  
+  totalMovies: number;
+  totalShows: number;
+  totalEpisodes: number;
+  totalUsers: number;
+  totalLibraries: number;
+
   // Derniers médias ajoutés
-  recentMedia: PlexRecentMedia[]
-  
+  recentMedia: PlexRecentMedia[];
+
   // Statistiques par type de bibliothèque
-  libraryStats: PlexLibraryStat[]
+  libraryStats: PlexLibraryStat[];
 }
 
 /**
  * Interface pour un média récemment ajouté dans Plex
  */
 export interface PlexRecentMedia {
-  title: string
-  type: 'movie' | 'episode'
-  library: string
-  addedAt: string
-  year?: number
-  thumb?: string
-  ratingKey: string
+  title: string;
+  type: "movie" | "episode";
+  library: string;
+  addedAt: string;
+  year?: number;
+  thumb?: string;
+  ratingKey: string;
 }
 
 /**
  * Interface pour les statistiques d'une bibliothèque Plex
  */
 export interface PlexLibraryStat {
-  name: string
-  type: 'movie' | 'show' | 'music' | 'photo'
-  count: number
+  name: string;
+  type: "movie" | "show" | "music" | "photo";
+  count: number;
 }
 
 /**
  * Options d'affichage pour les KPI Plex
  */
 export interface PlexKPIOptions {
-  showMovies?: boolean
-  showShows?: boolean
-  showEpisodes?: boolean
-  showUsers?: boolean
-  showLibraries?: boolean
+  showMovies?: boolean;
+  showShows?: boolean;
+  showEpisodes?: boolean;
+  showUsers?: boolean;
+  showLibraries?: boolean;
 }
 
 /**
@@ -148,13 +148,13 @@ export interface PlexKPIOptions {
  */
 export interface StatsDisplayOptions {
   // Afficher les KPI
-  showKPIs?: boolean
+  showKPIs?: boolean;
   // Afficher le graphique des bibliothèques
-  showLibraryChart?: boolean
+  showLibraryChart?: boolean;
   // Afficher les derniers médias ajoutés
-  showRecentMedia?: boolean
+  showRecentMedia?: boolean;
   // Options spécifiques pour les KPI (si applicable)
-  kpiOptions?: PlexKPIOptions
+  kpiOptions?: PlexKPIOptions;
 }
 
 /**
@@ -164,22 +164,22 @@ export interface StatsDisplayOptions {
  * - 'info' : affiche une information textuelle (ex: prochain épisode à télécharger)
  * - 'custom' : type personnalisé spécifique à un template (utilise customType)
  */
-export type CardStatType = 'number' | 'chart' | 'info' | 'custom'
+export type CardStatType = "number" | "chart" | "info" | "custom";
 
 /**
  * Configuration de la statistique affichée sur la carte
  */
 export interface CardStatConfig {
   // Type de statistique à afficher
-  type: CardStatType
+  type: CardStatType;
   // Type personnalisé spécifique au template (ex: 'plex-recent', 'sonarr-queue')
   // Utilisé uniquement si type === 'custom'
-  customType?: string
+  customType?: string;
   // Clé de la statistique à afficher (ex: 'totalMovies', 'totalShows', etc.)
   // Pour les types 'custom', cette clé peut ne pas être utilisée selon le type
-  key?: string
+  key?: string;
   // Libellé à afficher (optionnel, utilise statLabel par défaut)
-  label?: string
+  label?: string;
 }
 
 /**
@@ -187,37 +187,37 @@ export interface CardStatConfig {
  */
 export interface StatsConfig {
   // Template de stats utilisé (ex: 'plex', 'sonarr', 'generic')
-  templateId?: string
+  templateId?: string;
   // Options d'affichage personnalisées
-  displayOptions?: StatsDisplayOptions
+  displayOptions?: StatsDisplayOptions;
   // Configuration de la statistique affichée sur la carte
-  cardStat?: CardStatConfig
+  cardStat?: CardStatConfig;
   // Intervalle de rafraîchissement automatique en millisecondes (défaut : 600000 = 10 minutes)
-  refreshInterval?: number
+  refreshInterval?: number;
   // Timeout pour les requêtes API en millisecondes (défaut : 10000 = 10 secondes)
-  timeout?: number
+  timeout?: number;
   // Période d'historique pour les graphiques en jours (défaut : 7 jours)
-  historyPeriod?: number
+  historyPeriod?: number;
   // Nombre d'éléments par page pour les listes (défaut : 20)
-  itemsPerPage?: number
+  itemsPerPage?: number;
 }
 
 /**
  * Types de widgets disponibles dans le dashboard
  */
-export type WidgetType = 'clock' | 'weather' | 'system-info' | 'calendar' | 'notes' | 'rss'
+export type WidgetType = "clock" | "weather" | "system-info" | "calendar" | "notes" | "rss";
 
 /**
  * Configuration d'un widget
  */
 export interface Widget {
-  id: string
-  type: WidgetType
-  enabled: boolean
+  id: string;
+  type: WidgetType;
+  enabled: boolean;
   // Configuration spécifique au widget (sera typé selon le type)
-  config?: Record<string, any>
+  config?: Record<string, any>;
   // Ordre d'affichage
-  order?: number
+  order?: number;
 }
 
 /**
@@ -225,13 +225,13 @@ export interface Widget {
  */
 export interface ClockWidgetConfig {
   // Format d'affichage : '12h' ou '24h'
-  format?: '12h' | '24h'
+  format?: "12h" | "24h";
   // Afficher la date
-  showDate?: boolean
+  showDate?: boolean;
   // Afficher les secondes
-  showSeconds?: boolean
+  showSeconds?: boolean;
   // Fuseau horaire (optionnel, utilise le fuseau local par défaut)
-  timezone?: string
+  timezone?: string;
 }
 
 /**
@@ -239,13 +239,13 @@ export interface ClockWidgetConfig {
  */
 export interface WeatherWidgetConfig {
   // Ville pour la météo
-  city?: string
+  city?: string;
   // Code pays (optionnel)
-  countryCode?: string
+  countryCode?: string;
   // Clé API OpenWeatherMap (optionnel, peut être configurée globalement)
-  apiKey?: string
+  apiKey?: string;
   // Unité de température : 'celsius' ou 'fahrenheit'
-  unit?: 'celsius' | 'fahrenheit'
+  unit?: "celsius" | "fahrenheit";
 }
 
 /**
@@ -253,51 +253,49 @@ export interface WeatherWidgetConfig {
  */
 export interface SystemInfoWidgetConfig {
   // Afficher l'uptime
-  showUptime?: boolean
+  showUptime?: boolean;
   // Afficher la date de dernière mise à jour
-  showLastUpdate?: boolean
+  showLastUpdate?: boolean;
   // Informations personnalisées à afficher
-  customInfo?: Array<{ label: string; value: string }>
+  customInfo?: Array<{ label: string; value: string }>;
 }
 
 /**
  * Type d'effet de background disponible
  */
 export type BackgroundEffect =
-  | 'none'
-  | 'gradient-radial'
-  | 'gradient-linear'
-  | 'gradient-mesh'
-  | 'gradient-animated'
-  | 'glow'
-  | 'grid-pattern'
-  | 'dot-pattern'
-  | 'noise'
-  | 'mesh-animated'
-  | 'shimmer'
-  | 'diamond-pattern'
-  | 'grid-svg'
-  | 'dots-svg'
-  | 'waves-pattern'
-  | 'hexagon-pattern'
-  | 'crosshatch-pattern'
+  | "none"
+  | "gradient-radial"
+  | "gradient-linear"
+  | "gradient-mesh"
+  | "gradient-animated"
+  | "glow"
+  | "grid-pattern"
+  | "dot-pattern"
+  | "noise"
+  | "mesh-animated"
+  | "shimmer"
+  | "diamond-pattern"
+  | "grid-svg"
+  | "dots-svg"
+  | "waves-pattern"
+  | "hexagon-pattern"
+  | "crosshatch-pattern";
 
 /**
  * Identifiant de thème de couleur prédéfini
  * 'default' signifie utiliser le thème par défaut (celui défini dans globals.css)
  */
-export type ThemeId = 'default' | 'violet' | 'caramel'
-
+export type ThemeId = "default" | "violet" | "caramel";
 
 /**
  * Configuration globale de l'application
  */
 export interface AppConfig {
   // Effet de background sélectionné
-  backgroundEffect: BackgroundEffect
+  backgroundEffect: BackgroundEffect;
   // Thème de couleur sélectionné (optionnel, 'default' par défaut)
-  theme?: ThemeId
+  theme?: ThemeId;
   // Preset de style (optionnel)
-  stylePreset?: StylePreset
+  stylePreset?: StylePreset;
 }
-

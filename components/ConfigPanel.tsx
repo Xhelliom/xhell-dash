@@ -1,9 +1,9 @@
 /**
  * Composant ConfigPanel
- * 
+ *
  * Panneau de configuration utilisant le composant Sheet de shadcn/ui
  * Affiche une liste d'applications pour une meilleure UX de configuration
- * 
+ *
  * Permet de :
  * - Voir la liste des applications
  * - Ajouter une nouvelle application
@@ -11,74 +11,74 @@
  * - Supprimer une application
  */
 
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { AppListItem } from '@/components/AppListItem'
-import { Plus, Settings } from 'lucide-react'
-import type { App } from '@/lib/types'
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { AppListItem } from "@/components/AppListItem";
+import { Plus, Settings } from "lucide-react";
+import type { App } from "@/lib/types";
 
 interface ConfigPanelProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function ConfigPanel({ open, onOpenChange }: ConfigPanelProps) {
-  const router = useRouter()
-  const [apps, setApps] = useState<App[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter();
+  const [apps, setApps] = useState<App[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   /**
    * Charge la liste des applications depuis l'API
    */
   const loadApps = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const response = await fetch('/api/apps')
+      const response = await fetch("/api/apps");
       if (response.ok) {
-        const data = await response.json()
-        setApps(data)
+        const data = await response.json();
+        setApps(data);
       } else {
-        console.error('Erreur lors du chargement des apps')
+        console.error("Erreur lors du chargement des apps");
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des apps:', error)
+      console.error("Erreur lors du chargement des apps:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Charger les apps au montage et quand le panel s'ouvre
   useEffect(() => {
     if (open) {
-      loadApps()
+      loadApps();
     }
-  }, [open])
+  }, [open]);
 
   /**
    * Gère l'ajout d'une nouvelle application
    */
   const handleAdd = () => {
-    router.push('/config')
-    onOpenChange(false)
-  }
+    router.push("/config");
+    onOpenChange(false);
+  };
 
   /**
    * Gère l'édition d'une application
    */
   const handleEdit = (app: App) => {
-    router.push(`/config?id=${app.id}`)
-    onOpenChange(false)
-  }
+    router.push(`/config?id=${app.id}`);
+    onOpenChange(false);
+  };
 
   /**
    * Gère la suppression d'une application
@@ -86,40 +86,34 @@ export function ConfigPanel({ open, onOpenChange }: ConfigPanelProps) {
   const handleDelete = async (appId: string) => {
     try {
       const response = await fetch(`/api/apps/${appId}`, {
-        method: 'DELETE',
-      })
+        method: "DELETE",
+      });
 
       if (response.ok) {
         // Recharger la liste après suppression
-        await loadApps()
+        await loadApps();
       } else {
-        const error = await response.json()
-        alert(`Erreur: ${error.error || 'Impossible de supprimer l\'application'}`)
+        const error = await response.json();
+        alert(`Erreur: ${error.error || "Impossible de supprimer l'application"}`);
       }
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error)
-      alert('Une erreur est survenue lors de la suppression')
+      console.error("Erreur lors de la suppression:", error);
+      alert("Une erreur est survenue lors de la suppression");
     }
-  }
-
+  };
 
   return (
     <>
       {/* Panneau latéral avec animations fluides via Sheet */}
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent 
-          side="right" 
-          className="w-full sm:max-w-lg overflow-y-auto"
-        >
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
           {/* Header avec titre */}
           <SheetHeader>
             <div className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
               <SheetTitle>Configuration</SheetTitle>
             </div>
-            <SheetDescription>
-              Gérez vos applications et leurs raccourcis
-            </SheetDescription>
+            <SheetDescription>Gérez vos applications et leurs raccourcis</SheetDescription>
           </SheetHeader>
 
           {/* Contenu scrollable avec padding horizontal */}
@@ -132,25 +126,16 @@ export function ConfigPanel({ open, onOpenChange }: ConfigPanelProps) {
 
             {/* Liste des applications */}
             {isLoading ? (
-              <div className="text-center text-muted-foreground py-8">
-                Chargement...
-              </div>
+              <div className="text-center text-muted-foreground py-8">Chargement...</div>
             ) : apps.length === 0 ? (
               <div className="text-center text-muted-foreground py-8 border rounded-lg px-4">
                 <p className="mb-2 font-medium">Aucune application</p>
-                <p className="text-sm">
-                  Cliquez sur "Ajouter une application" pour commencer.
-                </p>
+                <p className="text-sm">Cliquez sur "Ajouter une application" pour commencer.</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {apps.map((app) => (
-                  <AppListItem
-                    key={app.id}
-                    app={app}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
+                  <AppListItem key={app.id} app={app} onEdit={handleEdit} onDelete={handleDelete} />
                 ))}
               </div>
             )}
@@ -158,5 +143,5 @@ export function ConfigPanel({ open, onOpenChange }: ConfigPanelProps) {
         </SheetContent>
       </Sheet>
     </>
-  )
+  );
 }

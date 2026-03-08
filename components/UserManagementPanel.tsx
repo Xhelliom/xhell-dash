@@ -1,129 +1,129 @@
 /**
  * Composant UserManagementPanel
- * 
+ *
  * Panneau de gestion des utilisateurs pour les administrateurs
  * Permet de créer, modifier et supprimer des utilisateurs
  */
 
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Plus, Edit, Trash2, Loader2, AlertCircle, Check } from 'lucide-react'
-import { cn } from '@/lib/utils'
+} from "@/components/ui/select";
+import { Plus, Edit, Trash2, Loader2, AlertCircle, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface User {
-  id: string
-  email: string
-  role: 'user' | 'admin'
-  createdAt: string
-  updatedAt: string
+  id: string;
+  email: string;
+  role: "user" | "admin";
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface UserManagementPanelProps {
-  className?: string
+  className?: string;
 }
 
 export function UserManagementPanel({ className }: UserManagementPanelProps) {
-  const [users, setUsers] = useState<User[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Champs du formulaire
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'user' | 'admin'>('user')
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"user" | "admin">("user");
 
   /**
    * Charge la liste des utilisateurs
    */
   const loadUsers = async () => {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
     try {
-      const response = await fetch('/api/users')
+      const response = await fetch("/api/users");
       if (response.ok) {
-        const data = await response.json()
-        setUsers(data)
+        const data = await response.json();
+        setUsers(data);
       } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Erreur lors du chargement des utilisateurs')
+        const errorData = await response.json();
+        setError(errorData.error || "Erreur lors du chargement des utilisateurs");
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des utilisateurs:', error)
-      setError('Erreur lors du chargement des utilisateurs')
+      console.error("Erreur lors du chargement des utilisateurs:", error);
+      setError("Erreur lors du chargement des utilisateurs");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   /**
    * Charge l'ID de l'utilisateur connecté
    */
   const loadCurrentUser = async () => {
     try {
-      const response = await fetch('/api/users/profile')
+      const response = await fetch("/api/users/profile");
       if (response.ok) {
-        const data = await response.json()
-        setCurrentUserId(data.id)
+        const data = await response.json();
+        setCurrentUserId(data.id);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement de l\'utilisateur actuel:', error)
+      console.error("Erreur lors du chargement de l'utilisateur actuel:", error);
     }
-  }
+  };
 
   // Charger les utilisateurs et l'utilisateur actuel au montage
   useEffect(() => {
-    loadUsers()
-    loadCurrentUser()
-  }, [])
+    loadUsers();
+    loadCurrentUser();
+  }, []);
 
   /**
    * Ouvre le dialog pour créer un nouvel utilisateur
    */
   const handleAddUser = () => {
-    setEditingUser(null)
-    setEmail('')
-    setPassword('')
-    setRole('user')
-    setError(null)
-    setSuccess(null)
-    setIsDialogOpen(true)
-  }
+    setEditingUser(null);
+    setEmail("");
+    setPassword("");
+    setRole("user");
+    setError(null);
+    setSuccess(null);
+    setIsDialogOpen(true);
+  };
 
   /**
    * Ouvre le dialog pour modifier un utilisateur
    */
   const handleEditUser = (user: User) => {
-    setEditingUser(user)
-    setEmail(user.email)
-    setPassword('')
-    setRole(user.role)
-    setError(null)
-    setSuccess(null)
-    setIsDialogOpen(true)
-  }
+    setEditingUser(user);
+    setEmail(user.email);
+    setPassword("");
+    setRole(user.role);
+    setError(null);
+    setSuccess(null);
+    setIsDialogOpen(true);
+  };
 
   /**
    * Supprime un utilisateur
@@ -131,78 +131,78 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
   const handleDeleteUser = async (userId: string) => {
     // Empêcher la suppression de son propre compte
     if (userId === currentUserId) {
-      setError('Vous ne pouvez pas supprimer votre propre compte')
-      setTimeout(() => setError(null), 5000)
-      return
+      setError("Vous ne pouvez pas supprimer votre propre compte");
+      setTimeout(() => setError(null), 5000);
+      return;
     }
 
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
-      return
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
+      return;
     }
 
     try {
       const response = await fetch(`/api/users/${userId}`, {
-        method: 'DELETE',
-      })
+        method: "DELETE",
+      });
 
       if (response.ok) {
-        setSuccess('Utilisateur supprimé avec succès')
-        await loadUsers()
-        setTimeout(() => setSuccess(null), 3000)
+        setSuccess("Utilisateur supprimé avec succès");
+        await loadUsers();
+        setTimeout(() => setSuccess(null), 3000);
       } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Erreur lors de la suppression')
-        setTimeout(() => setError(null), 5000)
+        const errorData = await response.json();
+        setError(errorData.error || "Erreur lors de la suppression");
+        setTimeout(() => setError(null), 5000);
       }
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error)
-      setError('Erreur lors de la suppression de l\'utilisateur')
-      setTimeout(() => setError(null), 5000)
+      console.error("Erreur lors de la suppression:", error);
+      setError("Erreur lors de la suppression de l'utilisateur");
+      setTimeout(() => setError(null), 5000);
     }
-  }
+  };
 
   /**
    * Valide le formulaire
    */
   const validateForm = (): boolean => {
-    setError(null)
+    setError(null);
 
-    if (!email || email.trim() === '') {
-      setError('L\'email est requis')
-      return false
+    if (!email || email.trim() === "") {
+      setError("L'email est requis");
+      return false;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError('Format d\'email invalide')
-      return false
+      setError("Format d'email invalide");
+      return false;
     }
 
     // Le mot de passe est requis pour la création, optionnel pour la modification
     if (!editingUser && (!password || password.length < 8)) {
-      setError('Le mot de passe doit contenir au moins 8 caractères')
-      return false
+      setError("Le mot de passe doit contenir au moins 8 caractères");
+      return false;
     }
 
     if (editingUser && password && password.length < 8) {
-      setError('Le mot de passe doit contenir au moins 8 caractères')
-      return false
+      setError("Le mot de passe doit contenir au moins 8 caractères");
+      return false;
     }
 
-    return true
-  }
+    return true;
+  };
 
   /**
    * Sauvegarde l'utilisateur (création ou modification)
    */
   const handleSave = async () => {
     if (!validateForm()) {
-      return
+      return;
     }
 
-    setIsSaving(true)
-    setError(null)
-    setSuccess(null)
+    setIsSaving(true);
+    setError(null);
+    setSuccess(null);
 
     try {
       if (editingUser) {
@@ -210,62 +210,62 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
         const updateData: { email?: string; password?: string; role?: string } = {
           email,
           role,
-        }
+        };
 
         // Ne mettre à jour le mot de passe que s'il est fourni
         if (password) {
-          updateData.password = password
+          updateData.password = password;
         }
 
         const response = await fetch(`/api/users/${editingUser.id}`, {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(updateData),
-        })
+        });
 
         if (response.ok) {
-          setSuccess('Utilisateur modifié avec succès')
-          setIsDialogOpen(false)
-          await loadUsers()
+          setSuccess("Utilisateur modifié avec succès");
+          setIsDialogOpen(false);
+          await loadUsers();
         } else {
-          const errorData = await response.json()
-          setError(errorData.error || 'Erreur lors de la modification')
+          const errorData = await response.json();
+          setError(errorData.error || "Erreur lors de la modification");
         }
       } else {
         // Création
-        const response = await fetch('/api/users', {
-          method: 'POST',
+        const response = await fetch("/api/users", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             email,
             password,
             role,
           }),
-        })
+        });
 
         if (response.ok) {
-          setSuccess('Utilisateur créé avec succès')
-          setIsDialogOpen(false)
-          await loadUsers()
+          setSuccess("Utilisateur créé avec succès");
+          setIsDialogOpen(false);
+          await loadUsers();
         } else {
-          const errorData = await response.json()
-          setError(errorData.error || 'Erreur lors de la création')
+          const errorData = await response.json();
+          setError(errorData.error || "Erreur lors de la création");
         }
       }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error)
-      setError('Erreur lors de la sauvegarde de l\'utilisateur')
+      console.error("Erreur lors de la sauvegarde:", error);
+      setError("Erreur lors de la sauvegarde de l'utilisateur");
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn("space-y-4", className)}>
       {/* En-tête avec bouton d'ajout */}
       <div className="flex items-center justify-between">
         <div>
@@ -321,25 +321,21 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
                   )}
                   <span
                     className={cn(
-                      'px-2 py-1 text-xs rounded-full shrink-0',
-                      user.role === 'admin'
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-muted text-muted-foreground'
+                      "px-2 py-1 text-xs rounded-full shrink-0",
+                      user.role === "admin"
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
                     )}
                   >
-                    {user.role === 'admin' ? 'Admin' : 'Utilisateur'}
+                    {user.role === "admin" ? "Admin" : "Utilisateur"}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Créé le {new Date(user.createdAt).toLocaleDateString('fr-FR')}
+                  Créé le {new Date(user.createdAt).toLocaleDateString("fr-FR")}
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEditUser(user)}
-                >
+                <Button variant="outline" size="sm" onClick={() => handleEditUser(user)}>
                   <Edit className="h-4 w-4 mr-2" />
                   Modifier
                 </Button>
@@ -348,7 +344,11 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
                   size="sm"
                   onClick={() => handleDeleteUser(user.id)}
                   disabled={user.id === currentUserId}
-                  title={user.id === currentUserId ? 'Vous ne pouvez pas supprimer votre propre compte' : 'Supprimer l\'utilisateur'}
+                  title={
+                    user.id === currentUserId
+                      ? "Vous ne pouvez pas supprimer votre propre compte"
+                      : "Supprimer l'utilisateur"
+                  }
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Supprimer
@@ -364,12 +364,12 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingUser ? 'Modifier l\'utilisateur' : 'Créer un utilisateur'}
+              {editingUser ? "Modifier l'utilisateur" : "Créer un utilisateur"}
             </DialogTitle>
             <DialogDescription>
               {editingUser
-                ? 'Modifiez les informations de l\'utilisateur'
-                : 'Remplissez les informations pour créer un nouvel utilisateur'}
+                ? "Modifiez les informations de l'utilisateur"
+                : "Remplissez les informations pour créer un nouvel utilisateur"}
             </DialogDescription>
           </DialogHeader>
 
@@ -399,14 +399,16 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
             {/* Champ Mot de passe */}
             <div className="space-y-2">
               <Label htmlFor="user-password">
-                Mot de passe {editingUser && '(laissez vide pour ne pas changer)'}
+                Mot de passe {editingUser && "(laissez vide pour ne pas changer)"}
               </Label>
               <Input
                 id="user-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={editingUser ? 'Laissez vide pour ne pas changer' : 'Minimum 8 caractères'}
+                placeholder={
+                  editingUser ? "Laissez vide pour ne pas changer" : "Minimum 8 caractères"
+                }
                 minLength={8}
                 required={!editingUser}
               />
@@ -415,10 +417,10 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
             {/* Champ Rôle */}
             <div className="space-y-2">
               <Label htmlFor="user-role">Rôle</Label>
-              <Select 
-                value={role} 
-                onValueChange={(value) => setRole(value as 'user' | 'admin')}
-                disabled={editingUser?.id === currentUserId && editingUser?.role === 'admin'}
+              <Select
+                value={role}
+                onValueChange={(value) => setRole(value as "user" | "admin")}
+                disabled={editingUser?.id === currentUserId && editingUser?.role === "admin"}
               >
                 <SelectTrigger id="user-role">
                   <SelectValue />
@@ -428,7 +430,7 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
                   <SelectItem value="admin">Administrateur</SelectItem>
                 </SelectContent>
               </Select>
-              {editingUser?.id === currentUserId && editingUser?.role === 'admin' && (
+              {editingUser?.id === currentUserId && editingUser?.role === "admin" && (
                 <p className="text-xs text-muted-foreground">
                   Vous ne pouvez pas modifier votre propre rôle d'administrateur
                 </p>
@@ -452,7 +454,7 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
                     Sauvegarde...
                   </>
                 ) : (
-                  'Sauvegarder'
+                  "Sauvegarder"
                 )}
               </Button>
             </div>
@@ -460,6 +462,5 @@ export function UserManagementPanel({ className }: UserManagementPanelProps) {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
-

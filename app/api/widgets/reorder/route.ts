@@ -1,12 +1,12 @@
 /**
  * API Route pour réordonner les widgets
- * 
+ *
  * PATCH : Met à jour l'ordre des widgets
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
-import { readWidgets, writeWidgets } from '@/lib/db'
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { readWidgets, writeWidgets } from "@/lib/db";
 
 /**
  * PATCH /api/widgets/reorder
@@ -15,67 +15,57 @@ import { readWidgets, writeWidgets } from '@/lib/db'
 export async function PATCH(request: NextRequest) {
   try {
     // Vérifier l'authentification et le rôle admin
-    const session = await auth()
-    
+    const session = await auth();
+
     if (!session || !session.user) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
     // @ts-expect-error - champ custom role
-    const userRole = session.user.role as string | undefined
+    const userRole = session.user.role as string | undefined;
 
-    if (userRole !== 'admin') {
-      return NextResponse.json(
-        { error: 'Accès refusé. Administrateur requis.' },
-        { status: 403 }
-      )
+    if (userRole !== "admin") {
+      return NextResponse.json({ error: "Accès refusé. Administrateur requis." }, { status: 403 });
     }
 
-    const body = await request.json()
-    
+    const body = await request.json();
+
     // Valider que widgetIds est un tableau
     if (!Array.isArray(body.widgetIds)) {
-      return NextResponse.json(
-        { error: 'widgetIds doit être un tableau' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "widgetIds doit être un tableau" }, { status: 400 });
     }
-    
+
     // Lire les widgets existants
-    const widgets = await readWidgets()
-    
+    const widgets = await readWidgets();
+
     // Créer un map pour un accès rapide
-    const widgetMap = new Map(widgets.map(w => [w.id, w]))
-    
+    const widgetMap = new Map(widgets.map((w) => [w.id, w]));
+
     // Réordonner selon l'ordre fourni
     const reorderedWidgets = body.widgetIds.map((widgetId: string, index: number) => {
-      const widget = widgetMap.get(widgetId)
+      const widget = widgetMap.get(widgetId);
       if (!widget) {
-        throw new Error(`Widget ${widgetId} non trouvé`)
+        throw new Error(`Widget ${widgetId} non trouvé`);
       }
       return {
         ...widget,
         order: index + 1,
-      }
-    })
-    
+      };
+    });
+
     // Ajouter les widgets qui ne sont pas dans la liste (au cas où)
-    const remainingWidgets = widgets.filter(w => !body.widgetIds.includes(w.id))
-    reorderedWidgets.push(...remainingWidgets)
-    
+    const remainingWidgets = widgets.filter((w) => !body.widgetIds.includes(w.id));
+    reorderedWidgets.push(...remainingWidgets);
+
     // Sauvegarder
-    await writeWidgets(reorderedWidgets)
-    
-    return NextResponse.json({ success: true }, { status: 200 })
+    await writeWidgets(reorderedWidgets);
+
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
-    console.error('Erreur lors du réordonnement des widgets:', error)
+    console.error("Erreur lors du réordonnement des widgets:", error);
     return NextResponse.json(
-      { error: error.message || 'Impossible de réordonner les widgets' },
+      { error: error.message || "Impossible de réordonner les widgets" },
       { status: 500 }
-    )
+    );
   }
 }
-

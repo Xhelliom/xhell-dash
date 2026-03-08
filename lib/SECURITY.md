@@ -9,16 +9,19 @@ Les tokens sensibles sont automatiquement chiffrés lors de leur stockage dans l
 ### Configuration
 
 1. **Générer une clé de chiffrement** :
+
    ```bash
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
 
 2. **Ajouter la clé dans `.env.local`** :
+
    ```env
    ENCRYPTION_KEY=votre_clé_hexadécimale_de_64_caractères
    ```
 
    Ou en base64 :
+
    ```env
    ENCRYPTION_KEY=votre_clé_base64_de_44_caractères
    ```
@@ -138,4 +141,3 @@ Si vous avez déjà des tokens stockés en clair dans la base de données :
 ### Avertissement "ENCRYPTION_KEY n'est pas définie"
 
 C'est normal si vous n'avez pas encore configuré le chiffrement. Les tokens seront stockés en clair jusqu'à ce que vous définissiez `ENCRYPTION_KEY`.
-

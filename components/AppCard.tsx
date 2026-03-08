@@ -1,6 +1,6 @@
 /**
  * Composant AppCard
- * 
+ *
  * Affiche une card pour une application avec :
  * - Logo (icône Lucide ou image URL)
  * - Nom de l'application
@@ -9,93 +9,90 @@
  * - Bouton Détails pour les apps avec template de stats (optionnel)
  */
 
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import * as Icons from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { StatsPanel } from '@/components/StatsPanel'
-import { CardStatRenderer } from '@/components/card-stats/CardStatRenderer'
-import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
-import { ConnectionStatusBadge } from '@/components/ConnectionStatusBadge'
-import { normalizeCardStatConfig } from '@/lib/card-stat-utils'
-import type { App, CardStatType } from '@/lib/types'
+import { useState, useEffect } from "react";
+import * as Icons from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { StatsPanel } from "@/components/StatsPanel";
+import { CardStatRenderer } from "@/components/card-stats/CardStatRenderer";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
+import { ConnectionStatusBadge } from "@/components/ConnectionStatusBadge";
+import { normalizeCardStatConfig } from "@/lib/card-stat-utils";
+import type { App, CardStatType } from "@/lib/types";
 
 interface AppCardProps {
-  app: App
-  onEdit?: (app: App) => void
-  onDelete?: (appId: string) => void
-  showActions?: boolean
+  app: App;
+  onEdit?: (app: App) => void;
+  onDelete?: (appId: string) => void;
+  showActions?: boolean;
 }
 
 /**
  * Récupère dynamiquement une icône Lucide par son nom
- * 
+ *
  * @param iconName - Nom de l'icône (ex: "Plex", "Home")
  * @returns Composant d'icône ou null si non trouvé
  */
 function getLucideIcon(iconName: string) {
   // Nettoyer le nom de l'icône (enlever espaces, mettre en PascalCase)
-  const cleanName = iconName
-    .replace(/\s+/g, '')
-    .replace(/[^a-zA-Z0-9]/g, '')
+  const cleanName = iconName.replace(/\s+/g, "").replace(/[^a-zA-Z0-9]/g, "");
 
   // Chercher l'icône dans les exports de lucide-react
   // Par défaut, on utilise Grid3x3 si l'icône n'est pas trouvée
-  const IconComponent = (Icons as any)[cleanName] || Icons.Grid3x3
+  const IconComponent = (Icons as any)[cleanName] || Icons.Grid3x3;
 
-  return IconComponent
+  return IconComponent;
 }
 
 export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardProps) {
-  const [imageError, setImageError] = useState(false)
-  const [isStatsPanelOpen, setIsStatsPanelOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [imageError, setImageError] = useState(false);
+  const [isStatsPanelOpen, setIsStatsPanelOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Vérifier si l'application a un template de statistiques configuré
-  const hasStatsTemplate = !!app.statsConfig?.templateId
-  const templateId = app.statsConfig?.templateId
-  
+  const hasStatsTemplate = !!app.statsConfig?.templateId;
+  const templateId = app.statsConfig?.templateId;
+
   // Configuration de la statistique de carte (normalisée pour gérer les anciennes configs)
-  const cardStatConfig = normalizeCardStatConfig(app.statsConfig?.cardStat)
-  const cardStatType: CardStatType | undefined = cardStatConfig?.type || (app.statLabel ? 'number' : undefined)
+  const cardStatConfig = normalizeCardStatConfig(app.statsConfig?.cardStat);
+  const cardStatType: CardStatType | undefined =
+    cardStatConfig?.type || (app.statLabel ? "number" : undefined);
 
   /**
    * Gère le clic sur le bouton pour ouvrir l'application
    */
   const handleOpenApp = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    window.open(app.url, '_blank')
-  }
-
+    e.stopPropagation();
+    window.open(app.url, "_blank");
+  };
 
   /**
    * Gère le clic sur le bouton d'édition
    */
   const handleEdit = (e: React.MouseEvent) => {
-    e.stopPropagation() // Empêcher le clic sur la card
-    onEdit?.(app)
-  }
+    e.stopPropagation(); // Empêcher le clic sur la card
+    onEdit?.(app);
+  };
 
   /**
    * Gère le clic sur le bouton de suppression
    */
   const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation() // Empêcher le clic sur la card
-    setIsDeleteDialogOpen(true)
-  }
+    e.stopPropagation(); // Empêcher le clic sur la card
+    setIsDeleteDialogOpen(true);
+  };
 
   /**
    * Confirme la suppression
    */
   const handleConfirmDelete = () => {
-    onDelete?.(app.id)
-  }
-
+    onDelete?.(app.id);
+  };
 
   // Récupérer le composant d'icône si c'est une icône
-  const IconComponent = app.logoType === 'icon' ? getLucideIcon(app.logo) : null
+  const IconComponent = app.logoType === "icon" ? getLucideIcon(app.logo) : null;
 
   return (
     <Card className="h-full transition-all hover:shadow-lg relative">
@@ -105,12 +102,12 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
           <ConnectionStatusBadge app={app} size="md" />
         </div>
       )}
-      
+
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Logo : icône ou image */}
           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted shrink-0">
-            {app.logoType === 'icon' && IconComponent ? (
+            {app.logoType === "icon" && IconComponent ? (
               <IconComponent className="h-8 w-8 text-primary" />
             ) : imageError ? (
               <Icons.Grid3x3 className="h-8 w-8 text-primary" />
@@ -132,12 +129,7 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
         {showActions && (
           <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
             {onEdit && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleEdit}
-                className="h-8 w-8 p-0"
-              >
+              <Button variant="ghost" size="sm" onClick={handleEdit} className="h-8 w-8 p-0">
                 <Icons.Pencil className="h-4 w-4" />
               </Button>
             )}
@@ -167,7 +159,7 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
           {!cardStatConfig && app.statLabel && (
             <div className="flex items-baseline gap-2">
               <span className="text-sm text-muted-foreground">{app.statLabel}:</span>
-              <span className="text-lg font-semibold">{app.statValue ?? 'N/A'}</span>
+              <span className="text-lg font-semibold">{app.statValue ?? "N/A"}</span>
             </div>
           )}
         </div>
@@ -192,9 +184,9 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
               variant="outline"
               size="sm"
               onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                setIsStatsPanelOpen(true)
+                e.preventDefault();
+                e.stopPropagation();
+                setIsStatsPanelOpen(true);
               }}
               className="flex-1"
               type="button"
@@ -226,6 +218,5 @@ export function AppCard({ app, onEdit, onDelete, showActions = false }: AppCardP
         description={`Êtes-vous sûr de vouloir supprimer "${app.name}" ? Cette action est irréversible.`}
       />
     </Card>
-  )
+  );
 }
-

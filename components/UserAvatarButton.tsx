@@ -1,76 +1,76 @@
 /**
  * Composant UserAvatarButton
- * 
+ *
  * Bouton flottant en haut à droite avec avatar généré via DiceBear
  * Menu dropdown avec options : "Mon profil", "Déconnexion"
  */
 
-'use client'
+"use client";
 
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { createAvatar } from '@dicebear/core'
-import { lorelei } from '@dicebear/collection'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect, useMemo, useRef } from "react";
+import { createAvatar } from "@dicebear/core";
+import { lorelei } from "@dicebear/collection";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { User, LogOut } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { signOut } from 'next-auth/react'
-import { ProfileDialog } from '@/components/ProfileDialog'
-import { PopoverAnchor } from '@/components/ui/popover'
+} from "@/components/ui/dialog";
+import { User, LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { signOut } from "next-auth/react";
+import { ProfileDialog } from "@/components/ProfileDialog";
+import { PopoverAnchor } from "@/components/ui/popover";
 
 interface UserSession {
   user?: {
-    email?: string | null
-    name?: string | null
-    role?: string | null
-  }
+    email?: string | null;
+    name?: string | null;
+    role?: string | null;
+  };
 }
 
 interface UserAvatarButtonProps {
-  onProfileClick?: () => void
-  isProfileDialogOpen?: boolean
-  onProfileDialogChange?: (open: boolean) => void
+  onProfileClick?: () => void;
+  isProfileDialogOpen?: boolean;
+  onProfileDialogChange?: (open: boolean) => void;
 }
 
-export function UserAvatarButton({ 
-  onProfileClick, 
+export function UserAvatarButton({
+  onProfileClick,
   isProfileDialogOpen = false,
-  onProfileDialogChange 
+  onProfileDialogChange,
 }: UserAvatarButtonProps) {
-  const [session, setSession] = useState<UserSession | null>(null)
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const avatarButtonRef = useRef<HTMLButtonElement>(null)
+  const [session, setSession] = useState<UserSession | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const avatarButtonRef = useRef<HTMLButtonElement>(null);
 
   // Charger la session au montage
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const response = await fetch('/api/auth/session')
+        const response = await fetch("/api/auth/session");
         if (response.ok) {
-          const data = await response.json()
-          setSession(data)
+          const data = await response.json();
+          setSession(data);
         }
       } catch (error) {
-        console.error('Erreur lors du chargement de la session:', error)
+        console.error("Erreur lors du chargement de la session:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    loadSession()
-  }, [])
+    loadSession();
+  }, []);
 
   // Générer l'avatar de manière déterministe basé sur l'email
   const avatarUrl = useMemo(() => {
     if (!session?.user?.email) {
-      return null
+      return null;
     }
 
     try {
@@ -78,35 +78,35 @@ export function UserAvatarButton({
         seed: session.user.email,
         size: 128,
         radius: 50,
-      }).toDataUri()
+      }).toDataUri();
     } catch (error) {
-      console.error('Erreur lors de la génération de l\'avatar:', error)
-      return null
+      console.error("Erreur lors de la génération de l'avatar:", error);
+      return null;
     }
-  }, [session?.user?.email])
+  }, [session?.user?.email]);
 
   // Gérer la déconnexion
   const handleSignOut = async () => {
-    setIsMenuOpen(false)
-    await signOut({ redirect: true, callbackUrl: '/login' })
-  }
+    setIsMenuOpen(false);
+    await signOut({ redirect: true, callbackUrl: "/login" });
+  };
 
   // Gérer l'ouverture du profil
   const handleProfileClick = () => {
-    setIsMenuOpen(false)
+    setIsMenuOpen(false);
     if (onProfileDialogChange) {
-      onProfileDialogChange(true)
+      onProfileDialogChange(true);
     } else if (onProfileClick) {
-      onProfileClick()
+      onProfileClick();
     }
-  }
+  };
 
   if (isLoading || !session?.user) {
-    return null
+    return null;
   }
 
-  const userEmail = session.user.email || ''
-  const userName = session.user.name || userEmail.split('@')[0]
+  const userEmail = session.user.email || "";
+  const userName = session.user.name || userEmail.split("@")[0];
 
   // Bouton avatar réutilisable
   const avatarButton = (
@@ -115,10 +115,10 @@ export function UserAvatarButton({
       variant="ghost"
       size="icon"
       className={cn(
-        'h-12 w-12 rounded-full p-0 overflow-hidden',
-        'border-2 border-border hover:border-primary',
-        'transition-all duration-200',
-        'shadow-lg hover:shadow-xl'
+        "h-12 w-12 rounded-full p-0 overflow-hidden",
+        "border-2 border-border hover:border-primary",
+        "transition-all duration-200",
+        "shadow-lg hover:shadow-xl"
       )}
       aria-label="Menu utilisateur"
       onClick={(e) => {
@@ -126,23 +126,19 @@ export function UserAvatarButton({
         // setIsMenuOpen(true)
         // Sinon, ouvrir le profil en Popover
         if (onProfileDialogChange) {
-          onProfileDialogChange(true)
+          onProfileDialogChange(true);
         }
       }}
     >
       {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt={`Avatar de ${userName}`}
-          className="w-full h-full object-cover"
-        />
+        <img src={avatarUrl} alt={`Avatar de ${userName}`} className="w-full h-full object-cover" />
       ) : (
         <div className="w-full h-full bg-muted flex items-center justify-center">
           <User className="h-6 w-6 text-muted-foreground" />
         </div>
       )}
     </Button>
-  )
+  );
 
   return (
     <div className="fixed top-6 right-6 z-[100]">
@@ -151,7 +147,7 @@ export function UserAvatarButton({
         open={isProfileDialogOpen || false}
         onOpenChange={(open) => {
           if (onProfileDialogChange) {
-            onProfileDialogChange(open)
+            onProfileDialogChange(open);
           }
         }}
       >
@@ -207,6 +203,5 @@ export function UserAvatarButton({
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
-

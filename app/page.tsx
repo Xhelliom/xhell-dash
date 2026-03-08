@@ -1,14 +1,14 @@
 /**
  * Page Dashboard principale
- * 
+ *
  * Affiche une grille de cards représentant les applications configurées
  * Permet d'ouvrir le panneau de configuration pour gérer les applications
  * Mode édition : drag & drop pour réordonner, boutons d'édition, ajout d'apps
  */
 
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -18,67 +18,62 @@ import {
   useSensors,
   DragEndEvent,
   DragStartEvent,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  arrayMove,
-} from '@dnd-kit/sortable'
-import { Button } from '@/components/ui/button'
-import { AppCard } from '@/components/AppCard'
-import { SortableAppCard } from '@/components/SortableAppCard'
-import { FloatingConfigButton } from '@/components/FloatingConfigButton'
-import { BackgroundConfigButton } from '@/components/BackgroundConfigButton'
-import { AppForm } from '@/components/AppForm'
-import { WidgetContainer } from '@/components/widgets/WidgetContainer'
-import { WidgetForm } from '@/components/widgets/WidgetForm'
-import { SortableWidgetContainer } from '@/components/widgets/SortableWidgetContainer'
-import { Background } from '@/components/Background'
-import type { Widget, BackgroundEffect, AppConfig, ThemeId } from '@/lib/types'
-import { applyTheme, resetTheme } from '@/lib/theme-utils'
-import { getThemeById } from '@/lib/themes'
-import { applyStylePreset, resetStyle } from '@/lib/style-utils'
-import { useTheme } from 'next-themes'
+} from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
+import { Button } from "@/components/ui/button";
+import { AppCard } from "@/components/AppCard";
+import { SortableAppCard } from "@/components/SortableAppCard";
+import { FloatingConfigButton } from "@/components/FloatingConfigButton";
+import { BackgroundConfigButton } from "@/components/BackgroundConfigButton";
+import { AppForm } from "@/components/AppForm";
+import { WidgetContainer } from "@/components/widgets/WidgetContainer";
+import { WidgetForm } from "@/components/widgets/WidgetForm";
+import { SortableWidgetContainer } from "@/components/widgets/SortableWidgetContainer";
+import { Background } from "@/components/Background";
+import type { Widget, BackgroundEffect, AppConfig, ThemeId } from "@/lib/types";
+import { applyTheme, resetTheme } from "@/lib/theme-utils";
+import { getThemeById } from "@/lib/themes";
+import { applyStylePreset, resetStyle } from "@/lib/style-utils";
+import { useTheme } from "next-themes";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from '@/components/ui/sheet'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus } from 'lucide-react'
-import type { App, CreateAppInput } from '@/lib/types'
-import { SettingsPanel } from '@/components/SettingsPanel'
-import { UserManagementPanel } from '@/components/UserManagementPanel'
-import { UserAvatarButton } from '@/components/UserAvatarButton'
-import { ProfileDialog } from '@/components/ProfileDialog'
-import { cn } from '@/lib/utils'
+} from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus } from "lucide-react";
+import type { App, CreateAppInput } from "@/lib/types";
+import { SettingsPanel } from "@/components/SettingsPanel";
+import { UserManagementPanel } from "@/components/UserManagementPanel";
+import { UserAvatarButton } from "@/components/UserAvatarButton";
+import { ProfileDialog } from "@/components/ProfileDialog";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
-  const [apps, setApps] = useState<App[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isEditMode, setIsEditMode] = useState(false)
-  const [isAppFormOpen, setIsAppFormOpen] = useState(false)
-  const [editingApp, setEditingApp] = useState<App | null>(null)
-  const [isSavingOrder, setIsSavingOrder] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
-  const [widgets, setWidgets] = useState<Widget[]>([])
-  const [isWidgetFormOpen, setIsWidgetFormOpen] = useState(false)
-  const [editingWidget, setEditingWidget] = useState<Widget | null>(null)
-  const [isSavingWidgetOrder, setIsSavingWidgetOrder] = useState(false)
-  const [isDraggingWidget, setIsDraggingWidget] = useState(false)
-  const [backgroundEffect, setBackgroundEffect] =
-    useState<BackgroundEffect>('mesh-animated')
-  const [theme, setTheme] = useState<ThemeId>('default')
-  const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false)
-  const { resolvedTheme } = useTheme()
-  const [configTab, setConfigTab] = useState<string>('settings')
-  const [isSavingConfig, setIsSavingConfig] = useState(false)
-  const saveConfigRef = useRef<(() => Promise<void>) | null>(null)
-  const justSavedRef = useRef(false) // Flag pour éviter la réouverture immédiate après sauvegarde
-  const [userRole, setUserRole] = useState<string | null>(null)
-  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
+  const [apps, setApps] = useState<App[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isAppFormOpen, setIsAppFormOpen] = useState(false);
+  const [editingApp, setEditingApp] = useState<App | null>(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [widgets, setWidgets] = useState<Widget[]>([]);
+  const [isWidgetFormOpen, setIsWidgetFormOpen] = useState(false);
+  const [editingWidget, setEditingWidget] = useState<Widget | null>(null);
+  const [isSavingWidgetOrder, setIsSavingWidgetOrder] = useState(false);
+  const [isDraggingWidget, setIsDraggingWidget] = useState(false);
+  const [backgroundEffect, setBackgroundEffect] = useState<BackgroundEffect>("mesh-animated");
+  const [theme, setTheme] = useState<ThemeId>("default");
+  const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const [configTab, setConfigTab] = useState<string>("settings");
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const saveConfigRef = useRef<(() => Promise<void>) | null>(null);
+  const justSavedRef = useRef(false); // Flag pour éviter la réouverture immédiate après sauvegarde
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
   // Configuration des capteurs pour le drag & drop
   const sensors = useSensors(
@@ -86,232 +81,232 @@ export default function Home() {
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
-  )
+  );
 
   /**
    * Charge la liste des applications depuis l'API
    * Les apps sont déjà triées par ordre côté serveur (dans db.ts)
    */
   const loadApps = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const response = await fetch('/api/apps')
+      const response = await fetch("/api/apps");
       if (response.ok) {
-        const data = await response.json()
-        setApps(data)
+        const data = await response.json();
+        setApps(data);
       } else {
-        console.error('Erreur lors du chargement des apps')
+        console.error("Erreur lors du chargement des apps");
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des apps:', error)
+      console.error("Erreur lors du chargement des apps:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   /**
    * Charge la liste des widgets depuis l'API
    */
   const loadWidgets = async () => {
     try {
-      const response = await fetch('/api/widgets')
+      const response = await fetch("/api/widgets");
       if (response.ok) {
-        const data = await response.json()
-        setWidgets(data)
+        const data = await response.json();
+        setWidgets(data);
       } else {
-        console.error('Erreur lors du chargement des widgets')
+        console.error("Erreur lors du chargement des widgets");
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des widgets:', error)
+      console.error("Erreur lors du chargement des widgets:", error);
     }
-  }
+  };
 
   /**
    * Applique le thème de couleur sélectionné
    * Utilisé lors du chargement et quand le mode dark/light change
    */
   const applyColorTheme = (themeId: ThemeId) => {
-    if (themeId === 'default') {
-      resetTheme()
+    if (themeId === "default") {
+      resetTheme();
     } else {
-      const themeToApply = getThemeById(themeId)
+      const themeToApply = getThemeById(themeId);
       if (themeToApply) {
-        applyTheme(themeToApply)
+        applyTheme(themeToApply);
       }
     }
-  }
+  };
 
   /**
    * Charge la configuration depuis l'API
    */
   const loadConfig = async () => {
     try {
-      const response = await fetch('/api/config')
+      const response = await fetch("/api/config");
       if (response.ok) {
-        const config: AppConfig = await response.json()
-        setBackgroundEffect(config.backgroundEffect || 'mesh-animated')
+        const config: AppConfig = await response.json();
+        setBackgroundEffect(config.backgroundEffect || "mesh-animated");
 
         // Appliquer le thème de couleur
-        const newTheme = config.theme || 'default'
-        setTheme(newTheme)
-        applyColorTheme(newTheme)
+        const newTheme = config.theme || "default";
+        setTheme(newTheme);
+        applyColorTheme(newTheme);
 
         // Appliquer le preset de style
         if (config.stylePreset) {
-          applyStylePreset(config.stylePreset)
+          applyStylePreset(config.stylePreset);
         } else {
-          resetStyle()
+          resetStyle();
         }
       } else {
-        console.error('Erreur lors du chargement de la configuration')
+        console.error("Erreur lors du chargement de la configuration");
       }
     } catch (error) {
-      console.error('Erreur lors du chargement de la configuration:', error)
+      console.error("Erreur lors du chargement de la configuration:", error);
     }
-  }
+  };
 
   // Réappliquer le thème quand le mode dark/light change
   useEffect(() => {
     if (resolvedTheme) {
       // Petit délai pour laisser next-themes appliquer la classe .dark
       const timeout = setTimeout(() => {
-        applyColorTheme(theme)
-      }, 100)
-      return () => clearTimeout(timeout)
+        applyColorTheme(theme);
+      }, 100);
+      return () => clearTimeout(timeout);
     }
-  }, [resolvedTheme, theme])
+  }, [resolvedTheme, theme]);
 
   /**
    * Gère le début du drag & drop pour les apps
    * Masque tous les boutons d'édition
    */
   const handleDragStart = (event: DragStartEvent) => {
-    setIsDragging(true)
-  }
+    setIsDragging(true);
+  };
 
   /**
    * Gère le début du drag & drop pour les widgets
    */
   const handleWidgetDragStart = (event: DragStartEvent) => {
-    setIsDraggingWidget(true)
-  }
+    setIsDraggingWidget(true);
+  };
 
   /**
    * Gère la fin du drag & drop pour les apps
    * Met à jour l'ordre localement et sauvegarde via l'API
    */
   const handleDragEnd = async (event: DragEndEvent) => {
-    setIsDragging(false)
+    setIsDragging(false);
 
-    const { active, over } = event
+    const { active, over } = event;
 
     if (!over || active.id === over.id) {
-      return
+      return;
     }
 
     // Trouver les indices des apps déplacées
-    const oldIndex = apps.findIndex((app) => app.id === active.id)
-    const newIndex = apps.findIndex((app) => app.id === over.id)
+    const oldIndex = apps.findIndex((app) => app.id === active.id);
+    const newIndex = apps.findIndex((app) => app.id === over.id);
 
     if (oldIndex === -1 || newIndex === -1) {
-      return
+      return;
     }
 
     // Réordonner localement
-    const reorderedApps = arrayMove(apps, oldIndex, newIndex)
-    setApps(reorderedApps)
+    const reorderedApps = arrayMove(apps, oldIndex, newIndex);
+    setApps(reorderedApps);
 
     // Sauvegarder le nouvel ordre via l'API
-    setIsSavingOrder(true)
+    setIsSavingOrder(true);
     try {
-      const response = await fetch('/api/apps/reorder', {
-        method: 'PATCH',
+      const response = await fetch("/api/apps/reorder", {
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           appIds: reorderedApps.map((app) => app.id),
         }),
-      })
+      });
 
       if (!response.ok) {
         // En cas d'erreur, recharger les apps pour restaurer l'ordre
-        console.error('Erreur lors de la sauvegarde de l\'ordre')
-        await loadApps()
+        console.error("Erreur lors de la sauvegarde de l'ordre");
+        await loadApps();
       }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde de l\'ordre:', error)
+      console.error("Erreur lors de la sauvegarde de l'ordre:", error);
       // En cas d'erreur, recharger les apps pour restaurer l'ordre
-      await loadApps()
+      await loadApps();
     } finally {
-      setIsSavingOrder(false)
+      setIsSavingOrder(false);
     }
-  }
+  };
 
   /**
    * Gère la fin du drag & drop pour les widgets
    */
   const handleWidgetDragEnd = async (event: DragEndEvent) => {
-    setIsDraggingWidget(false)
+    setIsDraggingWidget(false);
 
-    const { active, over } = event
+    const { active, over } = event;
 
     if (!over || active.id === over.id) {
-      return
+      return;
     }
 
     // Trouver les indices des widgets déplacés
-    const oldIndex = widgets.findIndex((widget) => widget.id === active.id)
-    const newIndex = widgets.findIndex((widget) => widget.id === over.id)
+    const oldIndex = widgets.findIndex((widget) => widget.id === active.id);
+    const newIndex = widgets.findIndex((widget) => widget.id === over.id);
 
     if (oldIndex === -1 || newIndex === -1) {
-      return
+      return;
     }
 
     // Réordonner localement
-    const reorderedWidgets = arrayMove(widgets, oldIndex, newIndex)
-    setWidgets(reorderedWidgets)
+    const reorderedWidgets = arrayMove(widgets, oldIndex, newIndex);
+    setWidgets(reorderedWidgets);
 
     // Sauvegarder le nouvel ordre via l'API
-    setIsSavingWidgetOrder(true)
+    setIsSavingWidgetOrder(true);
     try {
-      const response = await fetch('/api/widgets/reorder', {
-        method: 'PATCH',
+      const response = await fetch("/api/widgets/reorder", {
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           widgetIds: reorderedWidgets.map((widget) => widget.id),
         }),
-      })
+      });
 
       if (!response.ok) {
-        console.error('Erreur lors de la sauvegarde de l\'ordre des widgets')
-        await loadWidgets()
+        console.error("Erreur lors de la sauvegarde de l'ordre des widgets");
+        await loadWidgets();
       }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde de l\'ordre des widgets:', error)
-      await loadWidgets()
+      console.error("Erreur lors de la sauvegarde de l'ordre des widgets:", error);
+      await loadWidgets();
     } finally {
-      setIsSavingWidgetOrder(false)
+      setIsSavingWidgetOrder(false);
     }
-  }
+  };
 
   /**
    * Gère l'ajout d'une nouvelle application
    */
   const handleAddApp = () => {
-    setEditingApp(null)
-    setIsAppFormOpen(true)
-  }
+    setEditingApp(null);
+    setIsAppFormOpen(true);
+  };
 
   /**
    * Gère l'édition d'une application
    */
   const handleEditApp = (app: App) => {
-    setEditingApp(app)
-    setIsAppFormOpen(true)
-  }
+    setEditingApp(app);
+    setIsAppFormOpen(true);
+  };
 
   /**
    * Gère la suppression d'une application
@@ -319,21 +314,21 @@ export default function Home() {
   const handleDeleteApp = async (appId: string) => {
     try {
       const response = await fetch(`/api/apps/${appId}`, {
-        method: 'DELETE',
-      })
+        method: "DELETE",
+      });
 
       if (response.ok) {
         // Recharger la liste après suppression
-        await loadApps()
+        await loadApps();
       } else {
-        const error = await response.json()
-        alert(`Erreur: ${error.error || 'Impossible de supprimer l\'application'}`)
+        const error = await response.json();
+        alert(`Erreur: ${error.error || "Impossible de supprimer l'application"}`);
       }
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error)
-      alert('Une erreur est survenue lors de la suppression')
+      console.error("Erreur lors de la suppression:", error);
+      alert("Une erreur est survenue lors de la suppression");
     }
-  }
+  };
 
   /**
    * Gère la soumission du formulaire d'application
@@ -343,57 +338,57 @@ export default function Home() {
       if (editingApp) {
         // Mode modification
         const response = await fetch(`/api/apps/${editingApp.id}`, {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(data),
-        })
+        });
 
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Erreur lors de la modification')
+          const error = await response.json();
+          throw new Error(error.error || "Erreur lors de la modification");
         }
       } else {
         // Mode création
-        const response = await fetch('/api/apps', {
-          method: 'POST',
+        const response = await fetch("/api/apps", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(data),
-        })
+        });
 
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Erreur lors de la création')
+          const error = await response.json();
+          throw new Error(error.error || "Erreur lors de la création");
         }
       }
 
       // Fermer le formulaire et recharger les apps
-      setIsAppFormOpen(false)
-      setEditingApp(null)
-      await loadApps()
+      setIsAppFormOpen(false);
+      setEditingApp(null);
+      await loadApps();
     } catch (error: any) {
-      throw error
+      throw error;
     }
-  }
+  };
 
   /**
    * Gère l'ajout d'un nouveau widget
    */
   const handleAddWidget = () => {
-    setEditingWidget(null)
-    setIsWidgetFormOpen(true)
-  }
+    setEditingWidget(null);
+    setIsWidgetFormOpen(true);
+  };
 
   /**
    * Gère l'édition d'un widget
    */
   const handleEditWidget = (widget: Widget) => {
-    setEditingWidget(widget)
-    setIsWidgetFormOpen(true)
-  }
+    setEditingWidget(widget);
+    setIsWidgetFormOpen(true);
+  };
 
   /**
    * Gère la suppression d'un widget
@@ -401,20 +396,20 @@ export default function Home() {
   const handleDeleteWidget = async (widgetId: string) => {
     try {
       const response = await fetch(`/api/widgets/${widgetId}`, {
-        method: 'DELETE',
-      })
+        method: "DELETE",
+      });
 
       if (response.ok) {
-        await loadWidgets()
+        await loadWidgets();
       } else {
-        const error = await response.json()
-        alert(`Erreur: ${error.error || 'Impossible de supprimer le widget'}`)
+        const error = await response.json();
+        alert(`Erreur: ${error.error || "Impossible de supprimer le widget"}`);
       }
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error)
-      alert('Une erreur est survenue lors de la suppression')
+      console.error("Erreur lors de la suppression:", error);
+      alert("Une erreur est survenue lors de la suppression");
     }
-  }
+  };
 
   /**
    * Gère la soumission du formulaire de widget
@@ -424,114 +419,114 @@ export default function Home() {
       if (editingWidget) {
         // Mode modification
         const response = await fetch(`/api/widgets/${editingWidget.id}`, {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(data),
-        })
+        });
 
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Erreur lors de la modification')
+          const error = await response.json();
+          throw new Error(error.error || "Erreur lors de la modification");
         }
       } else {
         // Mode création
-        const response = await fetch('/api/widgets', {
-          method: 'POST',
+        const response = await fetch("/api/widgets", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(data),
-        })
+        });
 
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Erreur lors de la création')
+          const error = await response.json();
+          throw new Error(error.error || "Erreur lors de la création");
         }
       }
 
       // Fermer le formulaire et recharger les widgets
-      setIsWidgetFormOpen(false)
-      setEditingWidget(null)
-      await loadWidgets()
+      setIsWidgetFormOpen(false);
+      setEditingWidget(null);
+      await loadWidgets();
     } catch (error: any) {
-      throw error
+      throw error;
     }
-  }
+  };
 
   /**
    * Charge le rôle de l'utilisateur depuis la session
    */
   const loadUserRole = async () => {
     try {
-      const response = await fetch('/api/auth/session')
+      const response = await fetch("/api/auth/session");
       if (response.ok) {
-        const data: any = await response.json()
-        setUserRole(data?.user?.role || null)
+        const data: any = await response.json();
+        setUserRole(data?.user?.role || null);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement du rôle utilisateur:', error)
+      console.error("Erreur lors du chargement du rôle utilisateur:", error);
     }
-  }
+  };
 
   // Charger les apps, widgets, configuration et rôle utilisateur au montage du composant
   useEffect(() => {
-    loadApps()
-    loadWidgets()
-    loadConfig()
-    loadUserRole()
-  }, [])
+    loadApps();
+    loadWidgets();
+    loadConfig();
+    loadUserRole();
+  }, []);
 
   // Vérifier si l'utilisateur est admin
-  const isAdmin = userRole === 'admin'
+  const isAdmin = userRole === "admin";
 
   // Toggle du mode édition depuis le bouton flottant (admin seulement)
   useEffect(() => {
     const handleEditModeToggle = () => {
       // Ne permettre le mode édition que pour les admins
       if (isAdmin) {
-        setIsEditMode((prev) => !prev)
+        setIsEditMode((prev) => !prev);
       } else {
         // Si un non-admin essaie d'activer le mode édition, le désactiver
-        setIsEditMode(false)
+        setIsEditMode(false);
       }
-    }
+    };
 
     // Écouter l'événement personnalisé pour toggle le mode édition
-    window.addEventListener('toggleEditMode', handleEditModeToggle)
+    window.addEventListener("toggleEditMode", handleEditModeToggle);
 
     return () => {
-      window.removeEventListener('toggleEditMode', handleEditModeToggle)
-    }
-  }, [isAdmin])
+      window.removeEventListener("toggleEditMode", handleEditModeToggle);
+    };
+  }, [isAdmin]);
 
   // Désactiver le mode édition si l'utilisateur n'est plus admin
   useEffect(() => {
     if (!isAdmin) {
-      setIsEditMode(false)
+      setIsEditMode(false);
     }
-  }, [isAdmin])
+  }, [isAdmin]);
 
   /**
    * Gère l'ouverture du panneau de configuration
    * Empêche la réouverture immédiate après une sauvegarde
    */
-  const handleOpenConfigPanel = (tab: string = 'settings') => {
+  const handleOpenConfigPanel = (tab: string = "settings") => {
     // Ne pas rouvrir si on vient juste de sauvegarder
     if (justSavedRef.current) {
-      return
+      return;
     }
-    setConfigTab(tab)
-    setIsConfigPanelOpen(true)
-  }
+    setConfigTab(tab);
+    setIsConfigPanelOpen(true);
+  };
 
   /**
    * Gère la fermeture du panneau de configuration
    */
   const handleCloseConfigPanel = () => {
-    setIsConfigPanelOpen(false)
-  }
+    setIsConfigPanelOpen(false);
+  };
 
   /**
    * Gère les changements d'état du drawer de configuration
@@ -540,24 +535,24 @@ export default function Home() {
   const handleConfigPanelOpenChange = (open: boolean) => {
     // Si on essaie d'ouvrir et qu'on vient juste de sauvegarder, ignorer complètement
     if (open && justSavedRef.current) {
-      console.log('Tentative d\'ouverture bloquée - sauvegarde récente')
-      return
+      console.log("Tentative d'ouverture bloquée - sauvegarde récente");
+      return;
     }
-    setIsConfigPanelOpen(open)
+    setIsConfigPanelOpen(open);
     // Si on ferme le drawer, réinitialiser le flag après un délai plus long
     if (!open) {
       setTimeout(() => {
-        justSavedRef.current = false
-      }, 2000)
+        justSavedRef.current = false;
+      }, 2000);
     }
-  }
+  };
 
   /**
    * Recharge la configuration après modification
    */
   const handleConfigChange = () => {
-    loadConfig()
-  }
+    loadConfig();
+  };
 
   /**
    * Gère la sauvegarde de la configuration
@@ -566,39 +561,39 @@ export default function Home() {
    */
   const handleSaveConfig = async () => {
     if (saveConfigRef.current) {
-      setIsSavingConfig(true)
-      justSavedRef.current = true // Marquer qu'on vient de sauvegarder
+      setIsSavingConfig(true);
+      justSavedRef.current = true; // Marquer qu'on vient de sauvegarder
       try {
-        await saveConfigRef.current()
+        await saveConfigRef.current();
         // Fermer le drawer après une sauvegarde réussie
         // Utiliser un petit délai pour s'assurer que la sauvegarde est terminée
         setTimeout(() => {
-          setIsConfigPanelOpen(false)
-        }, 100)
+          setIsConfigPanelOpen(false);
+        }, 100);
         // Réinitialiser le flag après un délai plus long pour éviter la réouverture accidentelle
         setTimeout(() => {
-          justSavedRef.current = false
-        }, 1000)
+          justSavedRef.current = false;
+        }, 1000);
       } catch (error) {
         // En cas d'erreur, on ne ferme pas le drawer pour que l'utilisateur puisse réessayer
-        justSavedRef.current = false
-        console.error('Erreur lors de la sauvegarde:', error)
+        justSavedRef.current = false;
+        console.error("Erreur lors de la sauvegarde:", error);
       } finally {
-        setIsSavingConfig(false)
+        setIsSavingConfig(false);
       }
     }
-  }
+  };
 
   /**
    * Callback pour recevoir la fonction de sauvegarde depuis SettingsPanel
    */
   const handleSaveRef = (saveFn: () => Promise<void>) => {
-    saveConfigRef.current = saveFn
-  }
+    saveConfigRef.current = saveFn;
+  };
 
   // IDs des apps et widgets pour le SortableContext
-  const appIds = apps.map((app) => app.id)
-  const widgetIds = widgets.map((widget) => widget.id)
+  const appIds = apps.map((app) => app.id);
+  const widgetIds = widgets.map((widget) => widget.id);
 
   return (
     <Background effect={backgroundEffect}>
@@ -613,7 +608,10 @@ export default function Home() {
             onDragEnd={handleWidgetDragEnd}
           >
             <SortableContext items={widgetIds}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-8" style={{ gap: 'var(--gap-widgets, 1rem)' }}>
+              <div
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-8"
+                style={{ gap: "var(--gap-widgets, 1rem)" }}
+              >
                 {widgets.map((widget) => (
                   <SortableWidgetContainer
                     key={widget.id}
@@ -649,9 +647,7 @@ export default function Home() {
           </div>
         ) : apps.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-lg text-muted-foreground mb-4">
-              Aucune application configurée
-            </p>
+            <p className="text-lg text-muted-foreground mb-4">Aucune application configurée</p>
             {isAdmin && (
               <Button onClick={handleAddApp}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -667,7 +663,10 @@ export default function Home() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={appIds}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-stretch" style={{ gap: 'var(--gap-cards, 1.5rem)' }}>
+              <div
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-stretch"
+                style={{ gap: "var(--gap-cards, 1.5rem)" }}
+              >
                 {apps.map((app) =>
                   isEditMode && isAdmin ? (
                     <SortableAppCard
@@ -716,23 +715,23 @@ export default function Home() {
           className={cn(
             "fixed bottom-6 z-[101] transition-all duration-300 ease-in-out",
             // Position normale : en bas à gauche
-            // Quand le drawer est ouvert : 
+            // Quand le drawer est ouvert :
             // - Sur mobile : reste en bas à gauche (drawer prend toute la largeur mais le bouton reste cliquable au-dessus)
             // - Sur desktop : se décale à droite du drawer pour éviter le chevauchement
             isConfigPanelOpen
               ? "left-6 sm:left-[calc(32rem+1.5rem)]" // Sur mobile reste à gauche, sur desktop se décale à droite du drawer (32rem = max-w-lg)
               : "left-6"
           )}
-          style={{ pointerEvents: 'auto' }}
+          style={{ pointerEvents: "auto" }}
         >
           <BackgroundConfigButton
             onClick={() => {
               // Ne pas ouvrir si on vient juste de sauvegarder
               if (!justSavedRef.current) {
-                handleOpenConfigPanel('settings')
+                handleOpenConfigPanel("settings");
               }
             }}
-            isSaveMode={isConfigPanelOpen && configTab === 'settings'}
+            isSaveMode={isConfigPanelOpen && configTab === "settings"}
             onSave={handleSaveConfig}
             isSaving={isSavingConfig}
           />
@@ -740,7 +739,7 @@ export default function Home() {
       )}
 
       {/* Bouton avatar en haut à droite avec profil en popover */}
-      <UserAvatarButton 
+      <UserAvatarButton
         onProfileClick={() => setIsProfileDialogOpen(true)}
         isProfileDialogOpen={isProfileDialogOpen}
         onProfileDialogChange={setIsProfileDialogOpen}
@@ -758,12 +757,12 @@ export default function Home() {
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-hidden p-0 flex flex-col">
           <SheetHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
             <SheetTitle>
-              {editingApp ? 'Modifier l\'application' : 'Ajouter une application'}
+              {editingApp ? "Modifier l'application" : "Ajouter une application"}
             </SheetTitle>
             <SheetDescription>
               {editingApp
-                ? 'Modifiez les informations de l\'application'
-                : 'Remplissez les informations pour ajouter une nouvelle application au dashboard'}
+                ? "Modifiez les informations de l'application"
+                : "Remplissez les informations pour ajouter une nouvelle application au dashboard"}
             </SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -782,13 +781,11 @@ export default function Home() {
       <Sheet open={isWidgetFormOpen} onOpenChange={setIsWidgetFormOpen}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-hidden p-0 flex flex-col">
           <SheetHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
-            <SheetTitle>
-              {editingWidget ? 'Modifier le widget' : 'Ajouter un widget'}
-            </SheetTitle>
+            <SheetTitle>{editingWidget ? "Modifier le widget" : "Ajouter un widget"}</SheetTitle>
             <SheetDescription>
               {editingWidget
-                ? 'Modifiez la configuration du widget'
-                : 'Configurez un nouveau widget pour votre dashboard'}
+                ? "Modifiez la configuration du widget"
+                : "Configurez un nouveau widget pour votre dashboard"}
             </SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -796,8 +793,8 @@ export default function Home() {
               widget={editingWidget}
               onSubmit={handleWidgetFormSubmit}
               onCancel={() => {
-                setIsWidgetFormOpen(false)
-                setEditingWidget(null)
+                setIsWidgetFormOpen(false);
+                setEditingWidget(null);
               }}
             />
           </div>
@@ -807,7 +804,10 @@ export default function Home() {
       {/* Panneau de configuration avec onglets (admin seulement) */}
       {isAdmin && (
         <Sheet open={isConfigPanelOpen} onOpenChange={handleConfigPanelOpenChange}>
-          <SheetContent side="left" className="w-full sm:max-w-lg overflow-hidden p-0 flex flex-col">
+          <SheetContent
+            side="left"
+            className="w-full sm:max-w-lg overflow-hidden p-0 flex flex-col"
+          >
             <SheetHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
               <SheetTitle>Configuration</SheetTitle>
               <SheetDescription>
@@ -822,124 +822,115 @@ export default function Home() {
                   <TabsTrigger value="widgets">Widgets</TabsTrigger>
                   <TabsTrigger value="users">Utilisateurs</TabsTrigger>
                 </TabsList>
-              <TabsContent value="settings" className="mt-4">
-                <SettingsPanel
-                  onConfigChange={handleConfigChange}
-                  onSaveRef={handleSaveRef}
-                />
-              </TabsContent>
-              <TabsContent value="apps" className="mt-4">
-                <div className="space-y-4">
-                  <Button onClick={handleAddApp} className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Ajouter une application
-                  </Button>
-                  {apps.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-8 border rounded-lg px-4">
-                      <p className="mb-2 font-medium">Aucune application</p>
-                      <p className="text-sm">
-                        Cliquez sur "Ajouter une application" pour commencer.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {apps.map((app) => (
-                        <div
-                          key={app.id}
-                          className="flex items-center justify-between p-3 border rounded-lg"
-                        >
-                          <div>
-                            <p className="font-medium">{app.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {app.url}
-                            </p>
+                <TabsContent value="settings" className="mt-4">
+                  <SettingsPanel onConfigChange={handleConfigChange} onSaveRef={handleSaveRef} />
+                </TabsContent>
+                <TabsContent value="apps" className="mt-4">
+                  <div className="space-y-4">
+                    <Button onClick={handleAddApp} className="w-full">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Ajouter une application
+                    </Button>
+                    {apps.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-8 border rounded-lg px-4">
+                        <p className="mb-2 font-medium">Aucune application</p>
+                        <p className="text-sm">
+                          Cliquez sur "Ajouter une application" pour commencer.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {apps.map((app) => (
+                          <div
+                            key={app.id}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
+                            <div>
+                              <p className="font-medium">{app.name}</p>
+                              <p className="text-sm text-muted-foreground">{app.url}</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingApp(app);
+                                  setIsAppFormOpen(true);
+                                }}
+                              >
+                                Modifier
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteApp(app.id)}
+                              >
+                                Supprimer
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setEditingApp(app)
-                                setIsAppFormOpen(true)
-                              }}
-                            >
-                              Modifier
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeleteApp(app.id)}
-                            >
-                              Supprimer
-                            </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+                <TabsContent value="widgets" className="mt-4">
+                  <div className="space-y-4">
+                    <Button onClick={handleAddWidget} className="w-full">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Ajouter un widget
+                    </Button>
+                    {widgets.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-8 border rounded-lg px-4">
+                        <p className="mb-2 font-medium">Aucun widget</p>
+                        <p className="text-sm">Cliquez sur "Ajouter un widget" pour commencer.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {widgets.map((widget) => (
+                          <div
+                            key={widget.id}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
+                            <div>
+                              <p className="font-medium">
+                                {widget.type} {widget.enabled ? "(activé)" : "(désactivé)"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">ID: {widget.id}</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingWidget(widget);
+                                  setIsWidgetFormOpen(true);
+                                }}
+                              >
+                                Modifier
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteWidget(widget.id)}
+                              >
+                                Supprimer
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-              <TabsContent value="widgets" className="mt-4">
-                <div className="space-y-4">
-                  <Button onClick={handleAddWidget} className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Ajouter un widget
-                  </Button>
-                  {widgets.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-8 border rounded-lg px-4">
-                      <p className="mb-2 font-medium">Aucun widget</p>
-                      <p className="text-sm">
-                        Cliquez sur "Ajouter un widget" pour commencer.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {widgets.map((widget) => (
-                        <div
-                          key={widget.id}
-                          className="flex items-center justify-between p-3 border rounded-lg"
-                        >
-                          <div>
-                            <p className="font-medium">
-                              {widget.type} {widget.enabled ? '(activé)' : '(désactivé)'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              ID: {widget.id}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setEditingWidget(widget)
-                                setIsWidgetFormOpen(true)
-                              }}
-                            >
-                              Modifier
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeleteWidget(widget.id)}
-                            >
-                              Supprimer
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-              <TabsContent value="users" className="mt-4">
-                <UserManagementPanel />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </SheetContent>
-      </Sheet>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+                <TabsContent value="users" className="mt-4">
+                  <UserManagementPanel />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </SheetContent>
+        </Sheet>
       )}
     </Background>
-  )
+  );
 }

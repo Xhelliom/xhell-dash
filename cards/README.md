@@ -32,6 +32,7 @@ cards/
 ### Méthode rapide (résumé)
 
 1. **Copiez le template** :
+
    ```bash
    cp -r cards/TEMPLATE cards/votre-carte
    ```
@@ -53,6 +54,7 @@ cards/
 ## Exemple de référence
 
 La carte **Plex** (`cards/plex/`) est un exemple complet et fonctionnel. Consultez-la pour comprendre comment implémenter :
+
 - Une route API complète
 - Un panneau de statistiques détaillé
 - Des composants custom pour les stats de carte
@@ -63,6 +65,7 @@ La carte **Plex** (`cards/plex/`) est un exemple complet et fonctionnel. Consult
 ### Registre de cartes
 
 Toutes les cartes sont enregistrées dans un registre central (`lib/card-registry.ts`). Chaque carte doit :
+
 1. Exporter une `CardDefinition` depuis son `index.ts`
 2. S'enregistrer automatiquement avec `cardRegistry.register()`
 
@@ -99,10 +102,12 @@ Chaque carte doit exporter une `CardDefinition` avec les champs suivants :
 ## Types de statistiques de carte
 
 ### Types communs (toujours disponibles)
+
 - `number` : Affiche simplement un nombre
 - `chart` : Affiche un graphique (courbe)
 
 ### Types custom
+
 Chaque carte peut définir ses propres types custom (ex: `plex-recent`, `sonarr-queue`). Ces types doivent être enregistrés dans `cardStatComponents`.
 
 ## Bonnes pratiques
@@ -128,7 +133,7 @@ Pour contribuer une nouvelle carte :
 ## Support
 
 Si vous avez des questions ou besoin d'aide :
+
 - 📖 Consultez [`cards/TEMPLATE/README.md`](./TEMPLATE/README.md) pour la documentation détaillée sur la création d'une nouvelle carte
 - 🔍 Regardez `cards/plex/` comme exemple de référence complet
 - 🐛 Créez une issue sur le repository si vous rencontrez un problème
-
