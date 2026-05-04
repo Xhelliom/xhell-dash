@@ -25,6 +25,14 @@ RUN npx prisma generate
 # Construire l'application Next.js en mode standalone
 RUN npm run build
 
+# Installation isolée de la CLI Prisma avec toutes ses dépendances transitives.
+# On évite de copier des packages à la main depuis node_modules principal car
+# @prisma/config dépend de packages lourds (effect, c12…) difficiles à énumérer.
+RUN PRISMA_VERSION=$(node -e "console.log(require('/app/node_modules/prisma/package.json').version)") && \
+    mkdir -p /prisma-cli && cd /prisma-cli && \
+    echo '{"name":"p","version":"1.0.0"}' > package.json && \
+    npm install "prisma@${PRISMA_VERSION}" --no-save --omit=dev --ignore-scripts
+
 # Étape 2 : Image de production
 # Utilise Node.js 20 Alpine pour l'exécution
 FROM node:20-alpine AS runner
@@ -41,12 +49,16 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copier Prisma CLI + moteurs de query (nécessaires pour db push au démarrage)
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+# Copier la CLI Prisma avec toutes ses dépendances (installation isolée dans /prisma-cli)
+# + le client généré (.prisma) et le schema
+COPY --from=builder --chown=nextjs:nodejs /prisma-cli/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
+# Recréer le symlink prisma CLI — Docker COPY déréférence les symlinks, cassant __dirname
+RUN mkdir -p /app/node_modules/.bin && \
+    ln -sf /app/node_modules/prisma/build/index.js /app/node_modules/.bin/prisma && \
+    chown -h nextjs:nodejs /app/node_modules/.bin/prisma
 
 # Script d'entrée qui exécute les migrations avant de démarrer
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
