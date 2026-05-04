@@ -40,8 +40,9 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Créer un utilisateur non-root pour la sécurité
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs && \
+    apk add --no-cache su-exec
 
 # Copier les fichiers nécessaires depuis le builder
 # Le mode standalone crée un dossier .next/standalone avec uniquement ce qui est nécessaire
@@ -61,14 +62,12 @@ RUN mkdir -p /app/node_modules/.bin && \
     chown -h nextjs:nodejs /app/node_modules/.bin/prisma
 
 # Script d'entrée qui exécute les migrations avant de démarrer
-COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
+# L'entrypoint tourne en root, corrige les permissions du volume, puis su-exec → nextjs
+COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
 
-# Créer le dossier data pour la persistance JSONDB et Prisma
-RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
-
-# Passer à l'utilisateur non-root
-USER nextjs
+# Créer le dossier data (l'entrypoint en fixe les permissions au démarrage)
+RUN mkdir -p /app/data
 
 # Exposer le port 3000
 EXPOSE 3000
