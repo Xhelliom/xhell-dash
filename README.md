@@ -46,10 +46,10 @@ La base de données SQLite est initialisée automatiquement au premier démarrag
 
 Ouvrez `http://localhost:3000` (ou l'`AUTH_URL` configurée).
 
-| Champ | Valeur par défaut |
-|-------|-------------------|
-| Email | `xhell-admin@example.com` |
-| Mot de passe | `Admin123!` |
+| Champ        | Valeur par défaut         |
+| ------------ | ------------------------- |
+| Email        | `xhell-admin@example.com` |
+| Mot de passe | `Admin123!`               |
 
 > **Changez ce mot de passe immédiatement** via le menu profil en haut à droite.
 
@@ -118,7 +118,7 @@ spec:
             - name: DATABASE_URL
               value: "file:/app/data/xhell.db"
             - name: AUTH_URL
-              value: "https://dash.example.com"   # Adapter à votre domaine
+              value: "https://dash.example.com" # Adapter à votre domaine
             - name: AUTH_SECRET
               valueFrom:
                 secretKeyRef:
@@ -171,17 +171,17 @@ kubectl apply -f xhell-dash.yaml
 
 ## Variables d'environnement
 
-| Variable | Obligatoire | Description |
-|----------|:-----------:|-------------|
-| `AUTH_SECRET` | ✅ | Clé de signature des sessions (≥ 32 caractères aléatoires) |
-| `AUTH_URL` | ✅ prod | URL publique de l'application (ex: `https://dash.example.com`) |
-| `DATABASE_URL` | ✅ | Chemin SQLite — par défaut `file:/app/data/xhell.db` en Docker |
-| `ENCRYPTION_KEY` | Recommandé | Clé AES-256 (64 hex chars) pour chiffrer les tokens API en base |
-| `PLEX_TOKEN` | — | Token Plex (alternative à le stocker en base) |
-| `SONARR_API_KEY` | — | Clé API Sonarr |
-| `RADARR_API_KEY` | — | Clé API Radarr |
-| `TRUENAS_API_KEY` | — | Clé API TrueNAS |
-| `HOMEASSISTANT_API_KEY` | — | Token Long-Lived Home Assistant |
+| Variable                | Obligatoire | Description                                                     |
+| ----------------------- | :---------: | --------------------------------------------------------------- |
+| `AUTH_SECRET`           |     ✅      | Clé de signature des sessions (≥ 32 caractères aléatoires)      |
+| `AUTH_URL`              |   ✅ prod   | URL publique de l'application (ex: `https://dash.example.com`)  |
+| `DATABASE_URL`          |     ✅      | Chemin SQLite — par défaut `file:/app/data/xhell.db` en Docker  |
+| `ENCRYPTION_KEY`        | Recommandé  | Clé AES-256 (64 hex chars) pour chiffrer les tokens API en base |
+| `PLEX_TOKEN`            |      —      | Token Plex (alternative à le stocker en base)                   |
+| `SONARR_API_KEY`        |      —      | Clé API Sonarr                                                  |
+| `RADARR_API_KEY`        |      —      | Clé API Radarr                                                  |
+| `TRUENAS_API_KEY`       |      —      | Clé API TrueNAS                                                 |
+| `HOMEASSISTANT_API_KEY` |      —      | Token Long-Lived Home Assistant                                 |
 
 Consultez `.env.example` pour la liste complète et la documentation de chaque variable.
 
@@ -211,13 +211,13 @@ npm run dev                  # http://localhost:3000
 
 ### Scripts disponibles
 
-| Commande | Description |
-|----------|-------------|
-| `npm run dev` | Serveur de développement avec hot-reload |
-| `npm run build` | Build de production |
-| `npm run test` | Tests unitaires (Vitest) |
-| `npm run lint` | ESLint |
-| `npm run format` | Prettier |
+| Commande         | Description                              |
+| ---------------- | ---------------------------------------- |
+| `npm run dev`    | Serveur de développement avec hot-reload |
+| `npm run build`  | Build de production                      |
+| `npm run test`   | Tests unitaires (Vitest)                 |
+| `npm run lint`   | ESLint                                   |
+| `npm run format` | Prettier                                 |
 
 ---
 

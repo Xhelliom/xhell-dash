@@ -19,6 +19,9 @@ RUN npm ci
 # Copier le reste des fichiers de l'application
 COPY . .
 
+# Générer le client Prisma (nécessaire pour les types TypeScript)
+RUN npx prisma generate
+
 # Construire l'application Next.js en mode standalone
 RUN npm run build
 
