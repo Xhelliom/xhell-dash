@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { readApps } from "@/lib/db";
+import { cardRegistry } from "@/lib/card-registry";
 
 /**
  * GET /api/apps/[id]/stats
@@ -37,9 +38,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const templateId = app.statsConfig?.templateId;
 
     if (templateId && detailed) {
-      // Rediriger vers le handler spécialisé selon le templateId
+      if (!cardRegistry.has(templateId)) {
+        return NextResponse.json({ error: "Template de stats inconnu" }, { status: 400 });
+      }
+
       const statsResponse = await fetch(
-        `${request.nextUrl.origin}/api/apps/${id}/stats/${templateId}`,
+        `${request.nextUrl.origin}/api/apps/${encodeURIComponent(id)}/stats/${encodeURIComponent(templateId)}`,
         {
           headers: {
             "Content-Type": "application/json",

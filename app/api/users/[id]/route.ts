@@ -53,8 +53,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Validation des données
     if (email !== undefined) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
+      const { z } = await import("zod");
+      if (!z.string().email().safeParse(email).success) {
         return NextResponse.json({ error: "Format d'email invalide" }, { status: 400 });
       }
     }

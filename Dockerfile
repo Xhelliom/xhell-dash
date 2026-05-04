@@ -38,7 +38,17 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Créer le dossier data pour la persistance JSONDB
+# Copier Prisma CLI + moteur de query (nécessaires pour db push au démarrage)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
+# Script d'entrée qui exécute les migrations avant de démarrer
+COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
+# Créer le dossier data pour la persistance JSONDB et Prisma
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 
 # Passer à l'utilisateur non-root
@@ -51,6 +61,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Commande pour démarrer le serveur
-CMD ["node", "server.js"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
 

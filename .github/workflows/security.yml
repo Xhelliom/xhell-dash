@@ -64,12 +64,12 @@ jobs:
           scan-type: fs
           scan-ref: .
           format: sarif
-          output: trivy-fs-results.sarif
+          output: ${{ github.workspace }}/trivy-fs-results.sarif
           severity: CRITICAL,HIGH,MEDIUM
 
       - name: Upload Trivy SARIF to GitHub Security
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('trivy-fs-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-fs-results.sarif
           category: trivy-filesystem
@@ -98,12 +98,12 @@ jobs:
         with:
           image-ref: ${{ github.repository }}:scan
           format: sarif
-          output: trivy-image-results.sarif
+          output: ${{ github.workspace }}/trivy-image-results.sarif
           severity: CRITICAL,HIGH,MEDIUM
 
       - name: Upload Trivy SARIF to GitHub Security
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('trivy-image-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-image-results.sarif
           category: trivy-docker
@@ -121,15 +121,15 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: /language:${{ matrix.language }}
 

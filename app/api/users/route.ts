@@ -82,9 +82,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validation de l'email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Validation de l'email via Zod (évite les risques ReDoS)
+    const { z } = await import("zod");
+    if (!z.string().email().safeParse(email).success) {
       return NextResponse.json({ error: "Format d'email invalide" }, { status: 400 });
     }
 
