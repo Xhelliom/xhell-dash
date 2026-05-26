@@ -6,12 +6,7 @@
  * Récupère les statistiques depuis l'API TrueNAS
  */
 
-import {
-  createCardStatsRoute,
-  getAppUrl,
-  getCredential,
-  CardConfigError,
-} from "@/lib/card-route";
+import { createCardStatsRoute, getAppUrl, getCredential, CardConfigError } from "@/lib/card-route";
 import type { TrueNASStats, TrueNASPool, TrueNASService } from "./types";
 
 export const GET = createCardStatsRoute<TrueNASStats>({

@@ -6,12 +6,7 @@
  * Récupère les statistiques depuis l'API Home Assistant
  */
 
-import {
-  createCardStatsRoute,
-  getAppUrl,
-  getCredential,
-  CardConfigError,
-} from "@/lib/card-route";
+import { createCardStatsRoute, getAppUrl, getCredential, CardConfigError } from "@/lib/card-route";
 import type {
   HomeAssistantStats,
   HomeAssistantRecentChange,

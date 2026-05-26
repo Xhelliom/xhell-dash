@@ -6,12 +6,7 @@
  * Récupère les statistiques depuis l'API Kubernetes
  */
 
-import {
-  createCardStatsRoute,
-  getAppUrl,
-  getCredential,
-  CardConfigError,
-} from "@/lib/card-route";
+import { createCardStatsRoute, getAppUrl, getCredential, CardConfigError } from "@/lib/card-route";
 import type { KubernetesStats, KubernetesNamespaceStat } from "./types";
 
 export const GET = createCardStatsRoute<KubernetesStats>({

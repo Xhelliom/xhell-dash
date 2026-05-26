@@ -100,7 +100,13 @@ export function parseQueueRecords(records: Array<{ status?: string | null }>): Q
     }
   }
 
-  return { total: pending + downloading + completed + failed, pending, downloading, completed, failed };
+  return {
+    total: pending + downloading + completed + failed,
+    pending,
+    downloading,
+    completed,
+    failed,
+  };
 }
 
 /**

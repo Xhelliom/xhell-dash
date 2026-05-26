@@ -6,12 +6,7 @@
  * Récupère les statistiques depuis l'API Proxmox
  */
 
-import {
-  createCardStatsRoute,
-  getAppUrl,
-  getCredential,
-  CardConfigError,
-} from "@/lib/card-route";
+import { createCardStatsRoute, getAppUrl, getCredential, CardConfigError } from "@/lib/card-route";
 import type { ProxmoxStats, ProxmoxNode } from "./types";
 
 export const GET = createCardStatsRoute<ProxmoxStats>({

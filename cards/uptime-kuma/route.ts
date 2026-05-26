@@ -6,12 +6,7 @@
  * Récupère les statistiques depuis l'API Uptime Kuma
  */
 
-import {
-  createCardStatsRoute,
-  getAppUrl,
-  getCredential,
-  CardConfigError,
-} from "@/lib/card-route";
+import { createCardStatsRoute, getAppUrl, getCredential, CardConfigError } from "@/lib/card-route";
 import type { UptimeKumaStats, UptimeKumaMonitor } from "./types";
 
 export const GET = createCardStatsRoute<UptimeKumaStats>({

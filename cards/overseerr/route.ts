@@ -6,12 +6,7 @@
  * Récupère les statistiques depuis l'API Overseerr
  */
 
-import {
-  createCardStatsRoute,
-  getAppUrl,
-  getCredential,
-  CardConfigError,
-} from "@/lib/card-route";
+import { createCardStatsRoute, getAppUrl, getCredential, CardConfigError } from "@/lib/card-route";
 import type { OverseerrStats } from "./types";
 
 export const GET = createCardStatsRoute<OverseerrStats>({
