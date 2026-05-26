@@ -5,50 +5,22 @@
  * Récupère les KPI et les derniers médias ajoutés depuis l'API Plex
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { readApps } from "@/lib/db";
+import { createCardStatsRoute, getAppUrl, getCredential, CardConfigError } from "@/lib/card-route";
 import type { PlexStats, PlexRecentMedia, PlexLibraryStat } from "./types";
 
-/**
- * GET /api/apps/[id]/stats/plex
- * Récupère les statistiques détaillées depuis l'API Plex
- */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-
-    // Lire les applications
-    const apps = await readApps();
-
-    // Trouver l'application
-    const app = apps.find((a) => a.id === id);
-
-    if (!app) {
-      return NextResponse.json({ error: "Application non trouvée" }, { status: 404 });
-    }
-
-    // Vérifier que c'est bien une application avec le template Plex
-    const hasPlexTemplate = app.statsConfig?.templateId === "plex";
-    if (!hasPlexTemplate) {
-      return NextResponse.json(
-        { error: "Cette route est réservée aux applications avec le template Plex" },
-        { status: 400 }
-      );
-    }
-
-    // Récupérer le token Plex et l'URL du serveur
+export const GET = createCardStatsRoute<PlexStats>({
+  templateId: "plex",
+  templateLabel: "Plex",
+  fetchStats: async (app) => {
     // Le token peut être dans le champ plexToken ou extrait de statApiUrl (pour compatibilité)
-    const plexServerUrl = (app as any).plexServerUrl || app.url.replace(/\/$/, "");
-    const plexToken = (app as any).plexToken || extractTokenFromUrl(app.statApiUrl || "");
+    const plexServerUrl = getCredential(app, "plexServerUrl") || getAppUrl(app);
+    const plexToken = getCredential(app, "plexToken") || extractTokenFromUrl(app.statApiUrl || "");
 
     if (!plexToken) {
-      return NextResponse.json(
-        {
-          error:
-            "Token Plex non configuré. Veuillez configurer le token Plex dans les paramètres de l'application.",
-          hint: "Le token Plex est nécessaire pour accéder à l'API Plex. Vous pouvez le trouver dans les paramètres de votre serveur Plex.",
-        },
-        { status: 400 }
+      throw new CardConfigError(
+        "Token Plex non configuré. Veuillez configurer le token Plex dans les paramètres de l'application.",
+        400,
+        "Le token Plex est nécessaire pour accéder à l'API Plex. Vous pouvez le trouver dans les paramètres de votre serveur Plex."
       );
     }
 
@@ -60,26 +32,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
     baseUrl = baseUrl.replace(/\/$/, "");
 
-    // Récupérer les statistiques depuis l'API Plex
-    const stats = await fetchPlexStats(baseUrl, plexToken);
-
-    // Configurer le cache côté serveur (Next.js)
-    // Revalidation toutes les 5 minutes, mais permet stale-while-revalidate pendant 10 minutes
-    return NextResponse.json(stats, {
-      status: 200,
-      headers: {
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
-      },
-    });
-  } catch (error: any) {
-    console.error("Erreur lors de la récupération des stats Plex:", error);
-
-    return NextResponse.json(
-      { error: error.message || "Impossible de récupérer les statistiques Plex" },
-      { status: 500 }
-    );
-  }
-}
+    return fetchPlexStats(baseUrl, plexToken);
+  },
+});
 
 /**
  * Extrait le token Plex depuis une URL si elle contient le token en paramètre

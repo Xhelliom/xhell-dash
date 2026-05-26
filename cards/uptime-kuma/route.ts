@@ -6,78 +6,39 @@
  * Récupère les statistiques depuis l'API Uptime Kuma
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { readApps } from "@/lib/db";
+import {
+  createCardStatsRoute,
+  getAppUrl,
+  getCredential,
+  CardConfigError,
+} from "@/lib/card-route";
 import type { UptimeKumaStats, UptimeKumaMonitor } from "./types";
 
-/**
- * GET /api/apps/[id]/stats/uptime-kuma
- *
- * Récupère les statistiques détaillées depuis l'API Uptime Kuma
- */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-
-    // Lire les applications
-    const apps = await readApps();
-
-    // Trouver l'application
-    const app = apps.find((a) => a.id === id);
-
-    if (!app) {
-      return NextResponse.json({ error: "Application non trouvée" }, { status: 404 });
-    }
-
-    // Vérifier que c'est bien une application avec le bon template
-    const hasCorrectTemplate = app.statsConfig?.templateId === "uptime-kuma";
-    if (!hasCorrectTemplate) {
-      return NextResponse.json(
-        { error: "Cette route est réservée aux applications avec le template Uptime Kuma" },
-        { status: 400 }
-      );
-    }
-
-    // Récupérer les informations de connexion depuis l'app
-    const apiUrl = app.url?.replace(/\/$/, "") || "";
-    const apiKey = (app as any).apiKey || (app as any).uptimeKumaApiKey;
-    const username = (app as any).username;
-    const password = (app as any).password;
+export const GET = createCardStatsRoute<UptimeKumaStats>({
+  templateId: "uptime-kuma",
+  templateLabel: "Uptime Kuma",
+  fetchStats: async (app) => {
+    const apiUrl = getAppUrl(app);
+    const apiKey = getCredential(app, "apiKey", "uptimeKumaApiKey");
+    const username = getCredential(app, "username");
+    const password = getCredential(app, "password");
 
     if (!apiUrl) {
-      return NextResponse.json(
-        {
-          error:
-            "URL non configurée. Veuillez configurer l'URL du serveur Uptime Kuma dans les paramètres de l'application.",
-        },
-        { status: 400 }
+      throw new CardConfigError(
+        "URL non configurée. Veuillez configurer l'URL du serveur Uptime Kuma dans les paramètres de l'application."
       );
     }
 
     // Uptime Kuma peut utiliser soit une API key, soit username/password
     if (!apiKey && (!username || !password)) {
-      return NextResponse.json(
-        {
-          error:
-            "Authentification non configurée. Veuillez configurer soit une clé API, soit un nom d'utilisateur et un mot de passe dans les paramètres de l'application.",
-        },
-        { status: 400 }
+      throw new CardConfigError(
+        "Authentification non configurée. Veuillez configurer soit une clé API, soit un nom d'utilisateur et un mot de passe dans les paramètres de l'application."
       );
     }
 
-    // Récupérer les statistiques depuis l'API Uptime Kuma
-    const stats = await fetchUptimeKumaStats(apiUrl, apiKey, username, password);
-
-    return NextResponse.json(stats, { status: 200 });
-  } catch (error: any) {
-    console.error("Erreur lors de la récupération des stats Uptime Kuma:", error);
-
-    return NextResponse.json(
-      { error: error.message || "Impossible de récupérer les statistiques Uptime Kuma" },
-      { status: 500 }
-    );
-  }
-}
+    return fetchUptimeKumaStats(apiUrl, apiKey, username, password);
+  },
+});
 
 /**
  * Récupère les statistiques depuis l'API Uptime Kuma

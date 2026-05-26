@@ -6,77 +6,38 @@
  * Récupère les statistiques depuis l'API Kubernetes
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { readApps } from "@/lib/db";
+import {
+  createCardStatsRoute,
+  getAppUrl,
+  getCredential,
+  CardConfigError,
+} from "@/lib/card-route";
 import type { KubernetesStats, KubernetesNamespaceStat } from "./types";
 
-/**
- * GET /api/apps/[id]/stats/kubernetes
- *
- * Récupère les statistiques détaillées depuis l'API Kubernetes
- */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-
-    // Lire les applications
-    const apps = await readApps();
-
-    // Trouver l'application
-    const app = apps.find((a) => a.id === id);
-
-    if (!app) {
-      return NextResponse.json({ error: "Application non trouvée" }, { status: 404 });
-    }
-
-    // Vérifier que c'est bien une application avec le bon template
-    const hasCorrectTemplate = app.statsConfig?.templateId === "kubernetes";
-    if (!hasCorrectTemplate) {
-      return NextResponse.json(
-        { error: "Cette route est réservée aux applications avec le template Kubernetes" },
-        { status: 400 }
-      );
-    }
-
-    // Récupérer les informations de connexion depuis l'app
-    const apiUrl = app.url?.replace(/\/$/, "") || "";
-    const kubeconfig = (app as any).kubeconfig;
-    const token = (app as any).token || (app as any).kubernetesToken;
+export const GET = createCardStatsRoute<KubernetesStats>({
+  templateId: "kubernetes",
+  templateLabel: "Kubernetes",
+  fetchStats: async (app) => {
+    const apiUrl = getAppUrl(app);
+    const kubeconfig = getCredential(app, "kubeconfig");
+    const token = getCredential(app, "token", "kubernetesToken");
 
     if (!apiUrl) {
-      return NextResponse.json(
-        {
-          error:
-            "URL non configurée. Veuillez configurer l'URL de l'API Kubernetes dans les paramètres de l'application.",
-        },
-        { status: 400 }
+      throw new CardConfigError(
+        "URL non configurée. Veuillez configurer l'URL de l'API Kubernetes dans les paramètres de l'application."
       );
     }
 
     // Kubernetes nécessite soit un token, soit un kubeconfig
     if (!token && !kubeconfig) {
-      return NextResponse.json(
-        {
-          error:
-            "Authentification non configurée. Veuillez configurer soit un token, soit un kubeconfig dans les paramètres de l'application.",
-        },
-        { status: 400 }
+      throw new CardConfigError(
+        "Authentification non configurée. Veuillez configurer soit un token, soit un kubeconfig dans les paramètres de l'application."
       );
     }
 
-    // Récupérer les statistiques depuis l'API Kubernetes
-    const stats = await fetchKubernetesStats(apiUrl, token, kubeconfig);
-
-    return NextResponse.json(stats, { status: 200 });
-  } catch (error: any) {
-    console.error("Erreur lors de la récupération des stats Kubernetes:", error);
-
-    return NextResponse.json(
-      { error: error.message || "Impossible de récupérer les statistiques Kubernetes" },
-      { status: 500 }
-    );
-  }
-}
+    return fetchKubernetesStats(apiUrl, token, kubeconfig);
+  },
+});
 
 /**
  * Récupère les statistiques depuis l'API Kubernetes
