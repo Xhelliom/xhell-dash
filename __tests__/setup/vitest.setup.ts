@@ -32,9 +32,10 @@ vi.mock("next/server", () => ({
     }
   },
   NextResponse: {
-    json: (body: any, init?: { status?: number }) => ({
+    json: (body: any, init?: { status?: number; headers?: HeadersInit }) => ({
       json: () => Promise.resolve(body),
       status: init?.status || 200,
+      headers: new Headers(init?.headers || {}),
       body,
     }),
     redirect: (url: string) => ({

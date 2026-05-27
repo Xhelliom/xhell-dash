@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
-  "entry": ["app/**/*.{ts,tsx}", "auth.ts", "proxy.ts"],
+  "entry": ["app/**/*.{ts,tsx}", "auth.ts", "proxy.ts", "cards/**/route.ts"],
   "project": ["**/*.{ts,tsx}"],
   "ignore": ["**/__tests__/**", "components/ui/**"],
   "ignoreDependencies": [

@@ -89,9 +89,7 @@ ${darkStyles}
 };
 
 // Props pour ChartTooltip
-interface ChartTooltipProps extends React.ComponentProps<
-  typeof RechartsPrimitive.Tooltip<any, any>
-> {
+interface ChartTooltipProps extends React.ComponentProps<typeof RechartsPrimitive.Tooltip> {
   hideLabel?: boolean;
   hideIndicator?: boolean;
   indicator?: "line" | "dot" | "dashed";

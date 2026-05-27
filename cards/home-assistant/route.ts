@@ -6,86 +6,37 @@
  * Récupère les statistiques depuis l'API Home Assistant
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { readApps } from "@/lib/db";
+import { createCardStatsRoute, getAppUrl, getCredential, CardConfigError } from "@/lib/card-route";
 import type {
   HomeAssistantStats,
   HomeAssistantRecentChange,
   HomeAssistantDomainStat,
 } from "./types";
 
-/**
- * GET /api/apps/[id]/stats/home-assistant
- *
- * Récupère les statistiques détaillées depuis l'API Home Assistant
- */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-
-    // Lire les applications
-    const apps = await readApps();
-
-    // Trouver l'application
-    const app = apps.find((a) => a.id === id);
-
-    if (!app) {
-      return NextResponse.json({ error: "Application non trouvée" }, { status: 404 });
-    }
-
-    // Vérifier que c'est bien une application avec le bon template
-    const hasCorrectTemplate = app.statsConfig?.templateId === "home-assistant";
-    if (!hasCorrectTemplate) {
-      return NextResponse.json(
-        { error: "Cette route est réservée aux applications avec le template Home Assistant" },
-        { status: 400 }
-      );
-    }
-
-    // Récupérer les informations de connexion depuis l'app
-    const apiUrl = app.url?.replace(/\/$/, "") || "";
-    const apiKey = (app as any).apiKey || (app as any).homeAssistantApiKey;
+export const GET = createCardStatsRoute<HomeAssistantStats>({
+  templateId: "home-assistant",
+  templateLabel: "Home Assistant",
+  fetchStats: async (app) => {
+    const apiUrl = getAppUrl(app);
+    const apiKey = getCredential(app, "apiKey", "homeAssistantApiKey");
 
     if (!apiKey) {
-      return NextResponse.json(
-        {
-          error:
-            "Token API non configuré. Veuillez configurer le token API dans les paramètres de l'application.",
-        },
-        { status: 400 }
+      throw new CardConfigError(
+        "Token API non configuré. Veuillez configurer le token API dans les paramètres de l'application."
       );
     }
-
     if (!apiUrl) {
-      return NextResponse.json(
-        {
-          error:
-            "URL non configurée. Veuillez configurer l'URL du serveur Home Assistant dans les paramètres de l'application.",
-        },
-        { status: 400 }
+      throw new CardConfigError(
+        "URL non configurée. Veuillez configurer l'URL du serveur Home Assistant dans les paramètres de l'application."
       );
     }
 
-    // Récupérer les statistiques depuis l'API Home Assistant
-    const stats = await fetchHomeAssistantStats(apiUrl, apiKey);
-
-    return NextResponse.json(stats, { status: 200 });
-  } catch (error: any) {
-    console.error("Erreur lors de la récupération des stats Home Assistant:", error);
-
-    return NextResponse.json(
-      { error: error.message || "Impossible de récupérer les statistiques Home Assistant" },
-      { status: 500 }
-    );
-  }
-}
+    return fetchHomeAssistantStats(apiUrl, apiKey);
+  },
+});
 
 /**
  * Récupère les statistiques depuis l'API Home Assistant
- *
- * @param apiUrl - URL de base de l'API Home Assistant
- * @param apiKey - Token API pour l'authentification
- * @returns Les statistiques formatées
  */
 async function fetchHomeAssistantStats(
   apiUrl: string,

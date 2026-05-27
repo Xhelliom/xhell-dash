@@ -6,78 +6,34 @@
  * Récupère les statistiques depuis l'API Proxmox
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { readApps } from "@/lib/db";
+import { createCardStatsRoute, getAppUrl, getCredential, CardConfigError } from "@/lib/card-route";
 import type { ProxmoxStats, ProxmoxNode } from "./types";
 
-/**
- * GET /api/apps/[id]/stats/proxmox
- *
- * Récupère les statistiques détaillées depuis l'API Proxmox
- */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-
-    // Lire les applications
-    const apps = await readApps();
-
-    // Trouver l'application
-    const app = apps.find((a) => a.id === id);
-
-    if (!app) {
-      return NextResponse.json({ error: "Application non trouvée" }, { status: 404 });
-    }
-
-    // Vérifier que c'est bien une application avec le bon template
-    const hasCorrectTemplate = app.statsConfig?.templateId === "proxmox";
-    if (!hasCorrectTemplate) {
-      return NextResponse.json(
-        { error: "Cette route est réservée aux applications avec le template Proxmox" },
-        { status: 400 }
-      );
-    }
-
-    // Récupérer les informations de connexion depuis l'app
-    const apiUrl = app.url?.replace(/\/$/, "") || "";
-    const username = (app as any).username || (app as any).proxmoxUsername;
-    const password = (app as any).password || (app as any).proxmoxPassword;
-    const token = (app as any).token || (app as any).proxmoxToken;
+export const GET = createCardStatsRoute<ProxmoxStats>({
+  templateId: "proxmox",
+  templateLabel: "Proxmox",
+  fetchStats: async (app) => {
+    const apiUrl = getAppUrl(app);
+    const username = getCredential(app, "username", "proxmoxUsername");
+    const password = getCredential(app, "password", "proxmoxPassword");
+    const token = getCredential(app, "token", "proxmoxToken");
 
     if (!apiUrl) {
-      return NextResponse.json(
-        {
-          error:
-            "URL non configurée. Veuillez configurer l'URL du serveur Proxmox dans les paramètres de l'application.",
-        },
-        { status: 400 }
+      throw new CardConfigError(
+        "URL non configurée. Veuillez configurer l'URL du serveur Proxmox dans les paramètres de l'application."
       );
     }
 
     // Proxmox nécessite soit username/password, soit un token
     if (!token && (!username || !password)) {
-      return NextResponse.json(
-        {
-          error:
-            "Authentification non configurée. Veuillez configurer soit un token, soit un nom d'utilisateur et un mot de passe dans les paramètres de l'application.",
-        },
-        { status: 400 }
+      throw new CardConfigError(
+        "Authentification non configurée. Veuillez configurer soit un token, soit un nom d'utilisateur et un mot de passe dans les paramètres de l'application."
       );
     }
 
-    // Récupérer les statistiques depuis l'API Proxmox
-    const stats = await fetchProxmoxStats(apiUrl, username, password, token);
-
-    return NextResponse.json(stats, { status: 200 });
-  } catch (error: any) {
-    console.error("Erreur lors de la récupération des stats Proxmox:", error);
-
-    return NextResponse.json(
-      { error: error.message || "Impossible de récupérer les statistiques Proxmox" },
-      { status: 500 }
-    );
-  }
-}
+    return fetchProxmoxStats(apiUrl, username, password, token);
+  },
+});
 
 /**
  * Récupère un ticket d'authentification Proxmox
