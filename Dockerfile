@@ -56,6 +56,12 @@ COPY --from=builder --chown=nextjs:nodejs /prisma-cli/node_modules ./node_module
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
+# Scripts d'administration exécutables dans le conteneur (ex. reset de mot de passe).
+# bcryptjs (sans dépendance) est copié explicitement car il n'est pas garanti
+# d'être présent dans le bundle standalone.
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/bcryptjs ./node_modules/bcryptjs
+
 # Recréer le symlink prisma CLI — Docker COPY déréférence les symlinks, cassant __dirname
 RUN mkdir -p /app/node_modules/.bin && \
     ln -sf /app/node_modules/prisma/build/index.js /app/node_modules/.bin/prisma && \

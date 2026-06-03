@@ -1,15 +1,29 @@
-// Script pour réinitialiser le mot de passe d'un utilisateur existant
-// sans détruire la base de données (contrairement à reset-admin.sh/.ps1).
+// Script Node pur (sans tsx) pour réinitialiser le mot de passe d'un
+// utilisateur existant, sans détruire la base (contrairement à
+// reset-admin.sh/.ps1).
 //
-// Usage: npx tsx scripts/reset-password.ts <email> <nouveau-mot-de-passe>
-// Exemple: npx tsx scripts/reset-password.ts xhell-admin@example.com MonNouveauMDP!
+// Écrit en ESM et n'utilisant que @prisma/client et bcryptjs, afin de pouvoir
+// tourner aussi bien en dev qu'à l'intérieur de l'image Docker de prod (mode
+// standalone), où ni tsx ni les sources TypeScript ne sont disponibles.
 //
-// Si <nouveau-mot-de-passe> est omis, un mot de passe aléatoire est généré
-// et affiché dans la console.
+// Usage (dev) :
+//   node scripts/reset-password.mjs <email> [nouveau-mot-de-passe]
+//
+// Usage (prod Docker) :
+//   docker exec -it xhell-dash node scripts/reset-password.mjs <email> [mdp]
+//
+// Si le mot de passe est omis, un mot de passe aléatoire est généré et affiché.
+// DATABASE_URL doit être défini dans l'environnement (c'est déjà le cas dans le
+// conteneur de prod via docker-compose).
 
 import { randomBytes } from "node:crypto";
-import { prisma } from "../lib/prisma";
-import { hashPassword } from "../lib/users";
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
+
+// Doit rester en phase avec lib/users.ts (hashPassword).
+const SALT_ROUNDS = 10;
+
+const prisma = new PrismaClient();
 
 async function resetPassword() {
   const [emailArg, passwordArg] = process.argv.slice(2);
@@ -17,7 +31,7 @@ async function resetPassword() {
   // Vérification des arguments
   if (!emailArg) {
     console.error("❌ Email manquant.");
-    console.error("   Usage: npx tsx scripts/reset-password.ts <email> [nouveau-mot-de-passe]");
+    console.error("   Usage: node scripts/reset-password.mjs <email> [nouveau-mot-de-passe]");
     process.exitCode = 1;
     return;
   }
@@ -37,12 +51,13 @@ async function resetPassword() {
 
   // Si aucun mot de passe n'est fourni, on en génère un aléatoire et sûr
   const generated = !passwordArg;
-  const newPassword = passwordArg ?? randomBytes(12).toString("base64url");
+  const newPassword = passwordArg || randomBytes(12).toString("base64url");
 
   // Mise à jour du hash via la même logique bcrypt que le reste de l'app
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
   await prisma.user.update({
     where: { email },
-    data: { passwordHash: await hashPassword(newPassword) },
+    data: { passwordHash },
   });
 
   console.log(`✅ Mot de passe réinitialisé pour : ${email} (${user.role})`);
