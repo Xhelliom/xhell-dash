@@ -76,6 +76,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     // Utilise un JWT côté serveur pour la session, adapté aux apps stateless
     strategy: "jwt",
+    // Durée de vie de la session : 90 jours.
+    // Le cookie et le JWT signé (via AUTH_SECRET) restent valides 90 jours ;
+    // le token est rafraîchi à chaque visite, donc l'utilisateur n'a pas à se
+    // reconnecter tant qu'il revient au moins une fois tous les 90 jours.
+    // Important : AUTH_SECRET doit être fixe en prod, sinon un redémarrage
+    // invalide toutes les sessions.
+    maxAge: 90 * 24 * 60 * 60, // 90 jours en secondes
   },
   pages: {
     // Page de login custom (App Router : app/login/page.tsx)
